@@ -1,0 +1,169 @@
+<?php
+
+function fedora_commons_export_menu() {
+  $items['admin/structure/types/manage/%/fedora'] = array(
+    'title' => 'Fedora Commons',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('fedora_commons_export_bundle_settings_form', 4),
+    'access arguments' => array('fedora commons export settings'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'includes/bundle_settings.form.inc',
+  );
+  $items['admin/structure/types/manage/%/fields/%/fedora'] = array(
+    'title' => 'Fedora Commons',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('fedora_commons_export_field_settings_form', 4, 6),
+    'access arguments' => array('fedora commons export settings'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'includes/field_settings.form.inc',
+  );
+  return $items;
+}
+
+function fedora_commons_export_permission() {
+  return array(
+    'fedora commons export settings' => array(
+      'title' => t('Administer Fedora Commons export settings'),
+    ),
+  );
+}
+
+function fedora_commons_export_node_insert($node) {
+  $type_info = fedora_commons_export_bundle_settings($node->type);
+
+  if (isset($type_info[0]->id) && $type_info[0]->sync_fedora) {
+    module_load_include('inc', 'islandora', 'includes/utilities');
+    $cmodels = fedora_commons_export_get_bundle_cmodels($type_info[0]->id);
+
+    // Where should namespace come from?
+    $object = islandora_prepare_new_object('default', $node->title, array(), $cmodels, array());
+
+    // Properly set creator
+    $user = user_load($node->uid);
+    $object->owner = $user->name;
+
+    $object = islandora_add_object($object);
+
+    // Build datastreams
+    $datastreams = fedora_commons_export_build_datastreams($node);
+
+    foreach ($datastreams AS $ds_id => $datastream) {
+      $ds = $object->constructDatastream($ds_id, 'X');
+      $ds->setContentFromString($datastream['content']);
+      $object->ingestDatastream($ds);
+    }
+    // Log state of sync
+
+    watchdog('mitch', 'Created object ' . $object->id);
+  }
+}
+
+function fedora_commons_export_node_update($node) {
+
+}
+
+function fedora_commons_export_get_content_models() {
+  module_load_include('inc', 'islandora', 'includes/tuque');
+
+  $connection = new IslandoraTuque();
+
+  $query = 'select $object  $model from <#ri>
+  where (walk($model <fedora-model:hasModel><info:fedora/fedora-system:ContentModel-3.0>
+  and $model <fedora-model:hasModel> $object))
+  minus $object <mulgara:is><info:fedora/fedora-system:FedoraObject-3.0>
+  minus $object <mulgara:is><info:fedora/fedora-system:ContentModel-3.0>
+  minus $object <mulgara:is><info:fedora/fedora-system:ServiceDefinition-3.0>
+  minus $object <mulgara:is><info:fedora/fedora-system:ServiceDeployment-3.0>
+  order by $object';
+
+  $results = $connection->repository->ri->itqlQuery($query);
+
+  $content_models = array();
+  foreach ($results as $model) {
+    $content_models[] = $model['object']['value'];
+  }
+  $content_models = array_unique($content_models);
+  $content_models = array_values($content_models);
+
+  return $content_models;
+}
+
+function fedora_commons_export_build_datastreams($node) {
+  $fields = db_query("SELECT * FROM {fedora_commons_export_fields} WHERE bundle = :bundle AND export = 1",
+    array(':bundle' => $node->type)
+  )->fetchAll();
+
+  $datastreams = array();
+  foreach ($fields AS $field) {
+    if ($node->{$field->field}['und'][0]['value']) {  // @TODO: need a toggle to allow empty, not cast to TRUE values
+      $dsid = $field->dsid;
+      if (!isset($datastreams[$dsid])) {
+        $datastreams[$dsid]['type'] = $field->export_type;
+      }
+      $datastreams[$dsid]['content'] = fedora_commons_export_build_ds_content($datastreams[$dsid]['content'], $node->{$field->field}, $field);
+    }
+  }
+
+  return $datastreams;
+}
+
+function fedora_commons_export_build_ds_content($content, $node_field, $field_info) {
+  switch ($field_info->export_type) {
+    case 'xml_value':
+      if (empty($content)) {
+        $content = fedora_commons_export_init_xml_datastream($field_info);
+      }
+      $content = fedora_commons_export_build_xml_datastream($content, $node_field, $field_info);
+      break;
+    case 'managed_datastream':
+      break;
+  }
+  return $content;
+}
+
+function fedora_commons_export_init_xml_datastream($field_info) {
+  // Just hardcode to MODS for now
+  return '<mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink"></mods>';
+}
+
+function fedora_commons_export_build_xml_datastream($content, $node_field, $field_info) {
+  $xml_doc = new DOMDocument();
+  $xml_doc->loadXML($content);
+  switch ($field_info->xml_field_type) {
+    case 'element':
+      //$xml_doc->
+      break;
+    case 'attribute':
+
+      break;
+    case 'xml':
+      $value = $field_info->xml_field_value;
+      $value = str_replace('%value%', $node_field['und'][0]['value'], $value);  //@TODO: handle multi-value
+      $element = $xml_doc->createTextNode($value);
+      $xml_doc->appendChild($element); // @TODO: append to proper context
+      break;
+  }
+  $content = $xml_doc->saveXML();
+  return $content;
+}
+
+function fedora_commons_export_get_bundle_cmodels($bundle_settings_id) {
+  $cmodels = db_query("SELECT cmodel FROM {fedora_commons_export_type_cmodel} WHERE id = :id",
+    array(':id' => $bundle_settings_id)
+  )->fetchCol();
+  return $cmodels;
+}
+
+function fedora_commons_export_bundle_settings($bundle) {
+  $settings = db_query("SELECT * FROM {fedora_commons_export_type_settings} WHERE entity_type = 'node' AND bundle = :bundle",
+    array(':bundle' => $bundle)
+  )->fetchAll();
+  return $settings;
+}
+
+function fedora_commons_export_field_settings($type, $field) {
+  $settings = db_query("SELECT * FROM {fedora_commons_export_fields} WHERE bundle = :bundle AND field = :field",
+    array(':bundle' => $type, ':field' => $field)
+  )->fetchAll();
+  return $settings;
+}

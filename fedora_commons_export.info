@@ -1,0 +1,4 @@
+name = Fedora Commons Export
+description = Sync data from Drupal to Fedora Commons
+core = 7.x
+dependencies[] = islandora
