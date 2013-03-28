@@ -48,7 +48,9 @@ function fedora_commons_export_node_insert($node) {
     $datastreams = fedora_commons_export_build_datastreams($node);
 
     foreach ($datastreams AS $ds_id => $datastream) {
-      $ds = $object->constructDatastream($ds_id, 'X');
+      $ds = $object->constructDatastream($ds_id, 'M');
+      $ds->label = 'MODS Record';
+      $ds->mimetype = 'text/xml';
       $ds->setContentFromString($datastream['content']);
       $object->ingestDatastream($ds);
     }
@@ -139,8 +141,9 @@ function fedora_commons_export_build_xml_datastream($content, $node_field, $fiel
     case 'xml':
       $value = $field_info->xml_field_value;
       $value = str_replace('%value%', $node_field['und'][0]['value'], $value);  //@TODO: handle multi-value
-      $element = $xml_doc->createTextNode($value);
-      $xml_doc->appendChild($element); // @TODO: append to proper context
+      $fragment = $xml_doc->createDocumentFragment();
+      $fragment->appendXML($value);
+      $xml_doc->documentElement->appendChild($fragment);
       break;
   }
   $content = $xml_doc->saveXML();
