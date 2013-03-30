@@ -97,12 +97,16 @@ function fedora_commons_export_build_datastreams($node) {
 
   $datastreams = array();
   foreach ($fields AS $field) {
-    if ($node->{$field->field}['und'][0]['value']) {  // @TODO: need a toggle to allow empty, not cast to TRUE values
+    $values = field_get_items('node', $node, $field->field); //@TODO: proper language handling
+    if ($values) {
       $dsid = $field->dsid;
       if (!isset($datastreams[$dsid])) {
         $datastreams[$dsid]['type'] = $field->export_type;
+        $datastreams[$dsid]['content'] = '';
       }
-      $datastreams[$dsid]['content'] = fedora_commons_export_build_ds_content($datastreams[$dsid]['content'], $node->{$field->field}, $field);
+      foreach ($values AS $value) {
+        $datastreams[$dsid]['content'] = fedora_commons_export_build_ds_content($datastreams[$dsid]['content'], reset($value), $field);
+      }
     }
   }
 
@@ -128,7 +132,7 @@ function fedora_commons_export_init_xml_datastream($field_info) {
   return '<mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink"></mods>';
 }
 
-function fedora_commons_export_build_xml_datastream($content, $node_field, $field_info) {
+function fedora_commons_export_build_xml_datastream($content, $node_field_value, $field_info) {
   $xml_doc = new DOMDocument();
   $xml_doc->loadXML($content);
   switch ($field_info->xml_field_type) {
@@ -140,7 +144,7 @@ function fedora_commons_export_build_xml_datastream($content, $node_field, $fiel
       break;
     case 'xml':
       $value = $field_info->xml_field_value;
-      $value = str_replace('%value%', $node_field['und'][0]['value'], $value);  //@TODO: handle multi-value
+      $value = str_replace('%value%', $node_field_value, $value);  //@TODO: handle multi-value
       $fragment = $xml_doc->createDocumentFragment();
       $fragment->appendXML($value);
       $xml_doc->documentElement->appendChild($fragment);

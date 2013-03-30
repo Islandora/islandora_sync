@@ -2,7 +2,7 @@
 
 function fedora_commons_export_bundle_settings_form($form, $form_state, $bundle) {
   $form = array();
-
+  $bundle = str_replace('-', '_', $bundle);
   $settings = fedora_commons_export_bundle_settings($bundle);
 
   if (isset($settings[0]->id)) {
@@ -22,7 +22,7 @@ function fedora_commons_export_bundle_settings_form($form, $form_state, $bundle)
 
   $form['bundle'] = array(
     '#type' => 'value',
-    '#value' => str_replace('-', '_', $bundle),
+    '#value' => $bundle,
   );
 
   $form['sync_fedora'] = array(

@@ -1,12 +1,13 @@
 <?php
 
 function fedora_commons_export_field_settings_form($form, $form_state, $type, $field) {
-  $settings = fedora_commons_export_field_settings($type, $field);
-  if (empty($settings)) {
-    fedora_commons_export_field_settings_default($settings);
+  $type = str_replace('-', '_', $type);
+  $field_settings = fedora_commons_export_field_settings($type, $field);
+  if (empty($field_settings)) {
+    $settings = fedora_commons_export_field_settings_default();
   }
   else {
-    $settings = $settings[0];
+    $settings = $field_settings[0];
   }
 
   $form = array();
@@ -16,7 +17,7 @@ function fedora_commons_export_field_settings_form($form, $form_state, $type, $f
   );
   $form['bundle'] = array(
     '#type' => 'value',
-    '#value' => str_replace('-', '_', $type),
+    '#value' => $type,
   );
   $form['field'] = array(
     '#type' => 'value',
@@ -112,7 +113,8 @@ function fedora_commons_export_field_settings_form_submit($form, $form_state) {
   }
 }
 
-function fedora_commons_export_field_settings_default($settings) {
+function fedora_commons_export_field_settings_default() {
   $settings->export = 0;
   //$settings->export_type
+  return $settings;
 }
