@@ -12,10 +12,12 @@ function fedora_commons_export_bundle_settings_form($form, $form_state, $bundle)
       '#type' => 'value',
       '#value' => $settings[0]->id,
     );
+    $namespace =  $settings[0]->namespace;
   }
   else {
     $sync_fedora = FALSE;
     $selected_cmodels = array();
+    $namespace = '';
   }
 
   $form['bundle'] = array(
@@ -27,6 +29,13 @@ function fedora_commons_export_bundle_settings_form($form, $form_state, $bundle)
     '#type' => 'checkbox',
     '#title' => t('Sync nodes to Fedora'),
     '#default_value' => $sync_fedora,
+  );
+
+  $form['namespace'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Namespace'),
+    '#description' => t('Object ID namespace'),
+    '#default_value' => $namespace,
   );
 
   $content_models = drupal_map_assoc(fedora_commons_export_get_content_models());
@@ -53,10 +62,18 @@ function fedora_commons_export_bundle_settings_form($form, $form_state, $bundle)
   return $form;
 }
 
+function fedora_commons_export_bundle_settings_form_validate($form, $form_state) {
+  module_load_include('inc', 'islandora', 'includes/utilities');
+  if (!empty($form_state['values']['namespace']) && !islandora_is_valid_namespace($form_state['values']['namespace'])) {
+    form_set_error('namespace', t('Please enter a valid namespace'));
+  }
+}
+
 function fedora_commons_export_bundle_settings_form_submit($form, $form_state) {
   $record['sync_fedora'] = $form_state['values']['sync_fedora'];
   $record['entity_type'] = 'node';
   $record['bundle'] = $form_state['values']['bundle'];
+  $record['namespace'] = $form_state['values']['namespace'];
   if (isset($form_state['values']['id'])) {
     $record['id'] = $form_state['values']['id'];
     drupal_write_record('fedora_commons_export_type_settings', $record, 'id');

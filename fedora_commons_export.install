@@ -74,6 +74,12 @@ function fedora_commons_export_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'namespace' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
     ),
     'primary key' => array('id'),
   );

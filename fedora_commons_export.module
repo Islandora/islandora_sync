@@ -35,8 +35,8 @@ function fedora_commons_export_node_insert($node) {
     module_load_include('inc', 'islandora', 'includes/utilities');
     $cmodels = fedora_commons_export_get_bundle_cmodels($type_info[0]->id);
 
-    // Where should namespace come from?
-    $object = islandora_prepare_new_object('default', $node->title, array(), $cmodels, array());
+    $namespace =  $type_info[0]->namespace ?  $type_info[0]->namespace : 'default';
+    $object = islandora_prepare_new_object($namespace, $node->title, array(), $cmodels, array());
 
     // Properly set creator
     $user = user_load($node->uid);
