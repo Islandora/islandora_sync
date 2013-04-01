@@ -97,5 +97,52 @@ function fedora_commons_export_schema() {
       )
     ),
   );
+  $schema['fedora_commons_export_xml_ds'] = array(
+    'description' => '',
+    'fields' => array(
+      'ds_id' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'root' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'namespace_uri' => array(
+        'type' => 'varchar',
+        'length' => '256',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('ds_id'),
+  );
+  $schema['fedora_commons_export_xml_ds_namespaces'] = array(
+    'description' => '',
+    'fields' => array(
+      'ds_id' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'prefix' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'uri' => array(
+        'type' => 'varchar',
+        'length' => 256,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+  );
   return $schema;
 }

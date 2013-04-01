@@ -17,6 +17,37 @@ function fedora_commons_export_menu() {
     'type' => MENU_LOCAL_TASK,
     'file' => 'includes/field_settings.form.inc',
   );
+  $items['admin/islandora/fedora-export/xml-datastreams'] = array(
+    'title' => 'XML Datastream Settings',
+    'page callback' => 'fedora_commons_export_xml_ds_page',
+    'access arguments' => array('fedora commons export settings'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'includes/xml_ds_settings.form.inc',
+  );
+  $items['admin/islandora/fedora-export/xml-datastreams/add'] = array(
+    'title' => 'Add XML Datastream Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('fedora_commons_export_xml_ds_add'),
+    'access arguments' => array('fedora commons export settings'),
+    'type' => MENU_LOCAL_ACTION,
+    'file' => 'includes/xml_ds_settings.form.inc',
+  );
+  $items['admin/islandora/fedora-export/xml-datastreams/%/edit'] = array(
+    'title' => 'Edit XML Datastream Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('fedora_commons_export_xml_ds_edit', 4),
+    'access arguments' => array('fedora commons export settings'),
+    'type' => MENU_CALLBACK,
+    'file' => 'includes/xml_ds_settings.form.inc',
+  );
+  $items['admin/islandora/fedora-export/xml-datastreams/%/delete'] = array(
+    'title' => 'Delete XML Datastream Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('fedora_commons_export_xml_ds_delete', 4),
+    'access arguments' => array('fedora commons export settings'),
+    'type' => MENU_CALLBACK,
+    'file' => 'includes/xml_ds_settings.form.inc',
+  );
   return $items;
 }
 
@@ -144,7 +175,7 @@ function fedora_commons_export_build_xml_datastream($content, $node_field_value,
       break;
     case 'xml':
       $value = $field_info->xml_field_value;
-      $value = str_replace('%value%', $node_field_value, $value);  //@TODO: handle multi-value
+      $value = str_replace('%value%', $node_field_value, $value);
       $fragment = $xml_doc->createDocumentFragment();
       $fragment->appendXML($value);
       $xml_doc->documentElement->appendChild($fragment);
