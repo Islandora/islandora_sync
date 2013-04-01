@@ -159,8 +159,25 @@ function fedora_commons_export_build_ds_content($content, $node_field, $field_in
 }
 
 function fedora_commons_export_init_xml_datastream($field_info) {
-  // Just hardcode to MODS for now
-  return '<mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink"></mods>';
+  $ds_info = db_query('SELECT * FROM {fedora_commons_export_xml_ds} WHERE ds_id = :ds_id',
+    array('ds_id' => $field_info->dsid)
+  )->fetchAll();
+  $namespaces = db_query('SELECT * FROM {fedora_commons_export_xml_ds_namespaces} WHERE ds_id = :ds_id',
+    array('ds_id' => $field_info->dsid)
+  )->fetchAll();
+
+  $doc = new DOMDocument();
+  $root = $doc->createElement($ds_info[0]->root);
+  if ($ds_info[0]->namespace_uri) {
+    $root->setAttribute('xmlns', $ds_info[0]->namespace_uri);
+  }
+
+  foreach ($namespaces AS $namespace) {
+    $root->setAttribute('xmlns:'.$namespace->prefix, $namespace->uri);
+  }
+
+  $doc->appendChild($root);
+  return $doc->saveXML(); // @TODO: pass around DOMDocument rather than string
 }
 
 function fedora_commons_export_build_xml_datastream($content, $node_field_value, $field_info) {
