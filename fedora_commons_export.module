@@ -80,7 +80,7 @@ function fedora_commons_export_node_insert($node) {
 
     foreach ($datastreams AS $ds_id => $datastream) {
       $ds = $object->constructDatastream($ds_id, 'M');
-      $ds->label = 'MODS Record';
+      $ds->label = $ds_id . ' Record';
       $ds->mimetype = 'text/xml';
       $ds->setContentFromString($datastream['content']);
       $object->ingestDatastream($ds);
