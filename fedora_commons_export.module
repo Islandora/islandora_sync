@@ -95,6 +95,17 @@ function fedora_commons_export_node_update($node) {
 
 }
 
+function fedora_commons_export_features_api() {
+  return array(
+    'field_datastreams' => array(
+      'file' => drupal_get_path('module', 'fedora_commons_export') . '/includes/features.inc',
+      'default_hook' => 'field_datastreams_default',
+      'default_file' => FEATURES_DEFAULTS_INCLUDED,
+      'feature_source' => FALSE,
+    )
+  );
+}
+
 function fedora_commons_export_get_content_models() {
   module_load_include('inc', 'islandora', 'includes/tuque');
 
@@ -185,7 +196,41 @@ function fedora_commons_export_build_xml_datastream($content, $node_field_value,
   $xml_doc->loadXML($content);
   switch ($field_info->xml_field_type) {
     case 'element':
-      //$xml_doc->
+      $dom_xpath = new DOMXPath($xml_doc);
+      $path_part = explode('/', $field_info->xml_field_value);
+      $current_path = '';
+      $part_count = count($path_part);
+      $parent = null;
+      for ($i = 0; $i < $part_count; $i++) {
+        $path = $path_part[$i];
+        $value = null;
+        if (empty($current_path)) {
+          $current_path .= '/'; //@TODO: check if XML root has been provided if document context
+        }
+        if ($i == ($part_count - 1)) {
+          $value = $node_field_value;
+        }
+
+        $current_path = $current_path . $path;
+        $xpath = $dom_xpath->query($current_path);
+        if (!$xpath->length) {
+          // Need to create
+          $namespaced = explode(':', $path);
+          if (count($namespaced) > 1) {
+            $ns_uri = _get_ns_uri($namespaced[0]);
+            $new_element = $xml_doc->createElementNS($ns_uri, $path, $value);
+          }
+          else {
+            $new_element = $xml_doc->createElement($path, $value);
+          }
+          if ($i > 0 && !is_null($parent)) {  //@TODO: parent vs doc
+            $parent->appendChild($new_element);
+          } else {
+            $xml_doc->documentElement->appendChild($new_element);
+          }
+          $parent = $new_element;
+        }
+      }
       break;
     case 'attribute':
 
@@ -221,4 +266,11 @@ function fedora_commons_export_field_settings($type, $field) {
     array(':bundle' => $type, ':field' => $field)
   )->fetchAll();
   return $settings;
+}
+
+function _get_ns_uri($namespace) {
+  $ns = db_query("SELECT uri FROM {fedora_commons_export_xml_ds_namespaces} WHERE prefix = :prefix",
+    array(':prefix' => $namespace)
+  )->fetchAll();
+  return $ns[0]->uri;
 }

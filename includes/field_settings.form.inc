@@ -8,6 +8,7 @@ function fedora_commons_export_field_settings_form($form, $form_state, $type, $f
   }
   else {
     $settings = $field_settings[0];
+    $settings->new = FALSE;
   }
 
   $form = array();
@@ -102,7 +103,7 @@ function fedora_commons_export_field_settings_form_submit($form, $form_state) {
   $values = $form_state['values'];
 
   // Update settings
-  if (!empty($values['settings'])) {
+  if (!$values['settings']->new) {
     unset($values['settings']);
     drupal_write_record('fedora_commons_export_fields', $values, array('bundle', 'field'));
   }
@@ -114,6 +115,8 @@ function fedora_commons_export_field_settings_form_submit($form, $form_state) {
 }
 
 function fedora_commons_export_field_settings_default() {
+  $settings = new stdClass();
+  $settings->new = TRUE;
   $settings->export = 0;
   //$settings->export_type
   return $settings;
