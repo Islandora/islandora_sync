@@ -48,6 +48,14 @@ function fedora_commons_export_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'includes/xml_ds_settings.form.inc',
   );
+  $items['admin/islandora/fedora-export/bulk-import'] = array(
+    'title' => 'Batch Import Fedora Objects',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('fedora_commons_export_batch_import_form'),
+    'access arguments' => array('fedora commons export settings'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'includes/import.inc',
+  );
   return $items;
 }
 
@@ -89,6 +97,7 @@ function fedora_commons_export_node_insert($node) {
 
     watchdog('mitch', 'Created object ' . $object->id);
   }
+
 }
 
 function fedora_commons_export_node_update($node) {
