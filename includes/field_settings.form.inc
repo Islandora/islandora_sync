@@ -87,10 +87,15 @@ function fedora_commons_export_field_settings_form($form, $form_state, $type, $f
     '#empty_option' => t('- Select -'),
     '#default_value' => $settings->xml_field_type,
   );
-  $form['xml']['xml_field_value'] = array(
+  $form['xml']['create'] = array(
     '#type' => 'textfield',
-    '#title' => t('XML value'),
-    '#default_value' => $settings->xml_field_value,
+    '#title' => t('Create'),
+    '#default_value' => $settings->create,
+  );
+  $form['xml']['read'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Read'),
+    '#default_value' => $settings->read,
   );
   $form['submit'] = array(
     '#type' => 'submit',

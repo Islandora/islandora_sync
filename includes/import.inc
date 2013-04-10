@@ -70,8 +70,20 @@ function fedora_commons_export_build_node_fields(&$node, $object) {
   $fields_to_populate = db_query('SELECT * FROM {fedora_commons_export_fields} WHERE bundle = :bundle', array(':bundle' => $node->type))->fetchAll();
 
   foreach ($fields_to_populate AS $field) {
+    $values = get_field_values($field, $object);
 
+    foreach ($values AS $value) {
 
+    }
     //$node->{$field->field}
   }
+}
+
+function get_field_values($field, $object) {
+  $values = array();
+  switch ($field->export_type) {
+    case 'xml_value':
+
+  }
+  return $values;
 }

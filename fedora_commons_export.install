@@ -43,7 +43,12 @@ function fedora_commons_export_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
-      'xml_field_value' => array(
+      'create' => array(
+        'type' => 'text',
+        'size' => 'small',
+        'not null' => TRUE,
+      ),
+      'read' => array(
         'type' => 'text',
         'size' => 'small',
         'not null' => TRUE,

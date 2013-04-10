@@ -206,7 +206,7 @@ function fedora_commons_export_build_xml_datastream($content, $node_field_value,
   switch ($field_info->xml_field_type) {
     case 'element':
       $dom_xpath = new DOMXPath($xml_doc);
-      $path_part = explode('/', $field_info->xml_field_value);
+      $path_part = explode('/', $field_info->create);
       $current_path = '';
       $part_count = count($path_part);
       $parent = null;
@@ -245,7 +245,7 @@ function fedora_commons_export_build_xml_datastream($content, $node_field_value,
 
       break;
     case 'xml':
-      $value = $field_info->xml_field_value;
+      $value = $field_info->create;
       $value = str_replace('%value%', $node_field_value, $value);
       $fragment = $xml_doc->createDocumentFragment();
       $fragment->appendXML($value);
