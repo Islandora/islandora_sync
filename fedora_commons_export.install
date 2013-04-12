@@ -31,24 +31,35 @@ function fedora_commons_export_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
-      'xml_path_context' => array(
+      'create_context' => array(
         'type' => 'varchar',
         'length' => 20,
         'not null' => TRUE,
         'default' => '',
       ),
-      'xml_field_type' => array(
-        'type' => 'varchar',
-        'length' => 20,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'create' => array(
+      'create_path' => array(
         'type' => 'text',
         'size' => 'small',
         'not null' => TRUE,
       ),
-      'read' => array(
+      'create_type' => array(
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'create_value' => array(
+        'type' => 'text',
+        'size' => 'small',
+        'not null' => TRUE,
+      ),
+      'read_context' => array(
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'read_path' => array(
         'type' => 'text',
         'size' => 'small',
         'not null' => TRUE,
