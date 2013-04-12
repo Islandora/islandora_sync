@@ -175,6 +175,9 @@ function fedora_commons_export_field_settings_form($form, $form_state, $type, $f
   return $form;
 }
 
+//@TODO: clear fieldset values when parent checkbox is not checked, to avoid values getting stored
+//@TODO: validate that DS has been setup
+
 function fedora_commons_export_field_settings_form_submit($form, $form_state) {
   $values = $form_state['values'];
 

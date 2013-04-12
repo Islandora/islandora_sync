@@ -67,7 +67,9 @@ function fedora_commons_export_import_from_pid($pid, $type) {
 }
 
 function fedora_commons_export_build_node_fields(&$node, $object) {
-  $fields_to_populate = db_query('SELECT * FROM {fedora_commons_export_fields} WHERE bundle = :bundle', array(':bundle' => $node->type))->fetchAll();
+  $fields_to_populate = db_query('SELECT * FROM {fedora_commons_export_fields} WHERE bundle = :bundle AND read_path <> ""',
+    array(':bundle' => $node->type)
+  )->fetchAll();
 
   foreach ($fields_to_populate AS $field) {
     $values = get_field_values($field, $object);
@@ -81,9 +83,9 @@ function fedora_commons_export_build_node_fields(&$node, $object) {
 
 function get_field_values($field, $object) {
   $values = array();
-  switch ($field->export_type) {
-    case 'xml_value':
-
+  $read_path = '';
+  if ($field->read_context == 'parent') {
+    $parent_path = fedora_commons_export_get_parent_path($field);
   }
   return $values;
 }
