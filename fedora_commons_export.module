@@ -285,18 +285,43 @@ function _get_ns_uri($namespace) {
 }
 
 function fedora_commons_export_get_parent_path($field) {
+  $path = '/';
   $parents = fedora_commons_export_get_parent_fields($field);
+  array_reverse($parents);
+  foreach ($parents AS $parent) {
+
+  }
+
 }
 
+//@TODO: make recursive
 function fedora_commons_export_get_parent_fields($field) {
+  $parents = array();
   $field_info = field_info_instance('node', $field->field, $field->bundle);
 
   // is part of field_collection? has to be a better way to do this
   // entity_type == field_collection_item ?? in field_config_instance
+  // check if module exists?
   if ($field_info['widget']['module'] == 'field_collection') {
 
   }
+  elseif (module_exists('field_group')) { // could be disabled
+    // is part of field_group?
+    // this is also terrible
+    ctools_include('export');
+    $groups = ctools_export_load_object('field_group', 'conditions', array(
+      'entity_type' => 'node',
+      'bundle' => $field->bundle,
+    ));
+    foreach ($groups AS $group) {
+      if (in_array($field->field, $group->data['children'])) {
+        $parents[] = $group->group_name;
+        if ($group->parent_name) {
+          $parents[] = $group->parent_name;
+        }
+      }
+    }
+  }
 
-
-  // is part of field_group?
+  return $parents;
 }
