@@ -289,7 +289,14 @@ function fedora_commons_export_get_parent_path($field) {
 }
 
 function fedora_commons_export_get_parent_fields($field) {
-  // is part of field_collection?
+  $field_info = field_info_instance('node', $field->field, $field->bundle);
+
+  // is part of field_collection? has to be a better way to do this
+  // entity_type == field_collection_item ?? in field_config_instance
+  if ($field_info['widget']['module'] == 'field_collection') {
+
+  }
+
 
   // is part of field_group?
 }
