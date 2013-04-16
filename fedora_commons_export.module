@@ -104,6 +104,33 @@ function fedora_commons_export_node_update($node) {
 
 }
 
+function fedora_commons_export_module_implements_alter(&$implementations, $hook) {
+  if (($hook == 'form_field_ui_field_overview_form_alter' || $hook ==  'form_alter')
+    && isset($implementations['fedora_commons_export'])) {
+      $group = $implementations['fedora_commons_export'];
+      unset($implementations['fedora_commons_export']);
+      $implementations['fedora_commons_export'] = $group;
+  }
+}
+
+function fedora_commons_export_form_field_ui_field_overview_form_alter(&$form, &$form_state, $form_id) {
+  $form['fields']['#header'][6]['colspan'] = 3;  //@TODO: don't hardcode
+  foreach ($form['fields'] AS $field_name => $values) {
+    $row_types = array('field', 'extra_field', 'group');  //@TODO: must be a better way
+    if (isset($values['#row_type']) && in_array($values['#row_type'], $row_types)) {
+      $form['fields'][$field_name]['fedora'] = array(
+        '#type' => 'link',
+        '#title' => t('fedora'),
+        '#href' => 'admin/structure/types/manage/' . $form['#bundle'] . '/fields/' . $field_name . '/fedora',
+        '#options' => array('attributes' => array('title' => t('Manage Fedora Commons mappings.'))),
+      );
+    }
+    elseif ($field_name[0] != '#') {
+      $form['fields'][$field_name]['fedora'] = array('#markup' => '');
+    }
+  }
+}
+
 function fedora_commons_export_features_api() {
   return array(
     'field_datastreams' => array(
