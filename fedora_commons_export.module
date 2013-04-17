@@ -134,6 +134,7 @@ function fedora_commons_export_form_field_ui_field_overview_form_alter(&$form, &
 function fedora_commons_export_features_api() {
   return array(
     'field_datastreams' => array(
+      'name' => t('Field to Fedora mappings'),
       'file' => drupal_get_path('module', 'fedora_commons_export') . '/includes/features.inc',
       'default_hook' => 'field_datastreams_default',
       'default_file' => FEATURES_DEFAULTS_INCLUDED,
