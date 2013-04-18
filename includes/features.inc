@@ -33,30 +33,16 @@ function field_datastreams_features_export_render($module_name, $data, $export =
 }
 
 function field_datastreams_features_revert($module_name) {
-  $fields = module_invoke($module_name, 'field_datastreams');
-  if (!empty($fields)) {
-    foreach ($fields AS $field) {
-      //db_query("DELETE FROM {fedora_commons_export_fields}")
-    }
-  }
+  field_datastreams_features_rebuild($module_name);
 }
 
 function field_datastreams_features_rebuild($module_name) {
-  $fields = module_invoke($module_name, 'field_datastreams');
+  watchdog('mitch', 'field_datastreams_features_rebuild?');
+  $fields = module_invoke($module_name, 'field_datastreams_defaults');
   if (!empty($fields)) {
     foreach ($fields as $field) {
       drupal_write_record('fedora_commons_export_fields', $field);
 
-    }
-  }
-}
-
-function field_datastreams_features_enable($module) {
-  dpm('moo');
-  if ($default_mappings = module_invoke($module, 'field_datastreams_defaults')) {
-    dpm($default_mappings);
-    foreach ($default_mappings as $mapping) {
-      drupal_write_record('fedora_commons_export_fields', $mapping);
     }
   }
 }
