@@ -37,7 +37,6 @@ function field_datastreams_features_revert($module_name) {
 }
 
 function field_datastreams_features_rebuild($module_name) {
-  watchdog('mitch', 'field_datastreams_features_rebuild?');
   $fields = module_invoke($module_name, 'field_datastreams_defaults');
   if (!empty($fields)) {
     foreach ($fields as $field) {
@@ -45,4 +44,8 @@ function field_datastreams_features_rebuild($module_name) {
 
     }
   }
+}
+
+function field_datastreams_features_enable_feature($module_name) {
+  field_datastreams_features_rebuild($module_name);
 }
