@@ -87,5 +87,8 @@ function get_field_values($field, $object) {
   if ($field->read_context == 'parent') {
     $parent_path = fedora_commons_export_get_parent_path($field);
   }
+  else {
+
+  }
   return $values;
 }

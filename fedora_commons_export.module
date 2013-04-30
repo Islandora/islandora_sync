@@ -316,8 +316,10 @@ function _get_ns_uri($namespace) {
 
 function fedora_commons_export_get_parent_path($field) {
   $path = '/';
-  $parents = fedora_commons_export_get_parent_fields($field);
+  $parents = fedora_commons_export_get_parent_fields($field->field, $field->bundle);
+
   array_reverse($parents);
+
   foreach ($parents AS $parent) {
 
   }
@@ -325,9 +327,9 @@ function fedora_commons_export_get_parent_path($field) {
 }
 
 //@TODO: make recursive
-function fedora_commons_export_get_parent_fields($field) {
-  $parents = array();
-  $field_info = field_info_instance('node', $field->field, $field->bundle);
+function fedora_commons_export_get_parent_fields($field, $bundle, $parents = array()) {
+  $start_count = count($parents);
+  $field_info = field_info_instance('node', $field, $bundle);
 
   // is part of field_collection? has to be a better way to do this
   // entity_type == field_collection_item ?? in field_config_instance
@@ -341,16 +343,21 @@ function fedora_commons_export_get_parent_fields($field) {
     ctools_include('export');
     $groups = ctools_export_load_object('field_group', 'conditions', array(
       'entity_type' => 'node',
-      'bundle' => $field->bundle,
+      'bundle' => $bundle,
     ));
-    foreach ($groups AS $group) {
-      if (in_array($field->field, $group->data['children'])) {
+    foreach ($groups as $group) {
+      if (in_array($field, $group->data['children'])) {
         $parents[] = $group->group_name;
         if ($group->parent_name) {
           $parents[] = $group->parent_name;
         }
       }
     }
+  }
+
+  $current_count = count($parents);
+  if ($current_count > $start_count) {
+    $parents = fedora_commons_export_get_parent_fields($parents[$current_count -1], $bundle, $parents);
   }
 
   return $parents;
