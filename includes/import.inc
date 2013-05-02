@@ -67,7 +67,10 @@ function fedora_commons_export_import_from_pid($pid, $type) {
 }
 
 function fedora_commons_export_build_node_fields(&$node, $object) {
-  $fields_to_populate = db_query('SELECT * FROM {fedora_commons_export_fields} WHERE bundle = :bundle',
+  $fields_to_populate = db_query("SELECT * FROM {fedora_commons_export_fields} fcef
+    LEFT JOIN {field_config} fc ON fc.field_name = fcef.field
+    WHERE fcef.bundle = :bundle
+    AND fc.type != 'field_collection'",
     array(':bundle' => $node->type)
   )->fetchAll();
   //@TODO: should exclude collection type fields
@@ -101,10 +104,10 @@ function fedora_commons_export_build_node_fields(&$node, $object) {
 
   $values = array();
   foreach ($field_collection_fields as $field_collection_field) {
-    $values[$field_collection_field->bundle][$field_collection_field->field] = get_field_values($field_collection_field, $object, array($field_collection_field->bundle), FALSE);
+    $values[$field_collection_field->bundle][$field_collection_field->field] = get_field_values($field_collection_field, $object, array($field_collection_field->bundle));
   }
 
-  foreach ($values AS $bundle => $fields) {
+  foreach ($values as $bundle => $fields) {
     $collection_count = 0;
     foreach ($fields as $value) {
       if (count($value) > $collection_count) {
@@ -129,7 +132,7 @@ function fedora_commons_export_build_node_fields(&$node, $object) {
   }
 }
 
-function get_field_values($field, $object, $parents = array(), $text = TRUE) {
+function get_field_values($field, $object, $parents = array()) {
   $values = array();
 
   if ($field->export_type == 'xml_value') {
@@ -142,16 +145,10 @@ function get_field_values($field, $object, $parents = array(), $text = TRUE) {
       $read_path .= $parent_path;
       if ($field_path) {
         $read_path .= '/' . $field_path; //@TODO: should text() be here?
-        if ($text) {
-          $read_path .= '/text()';
-        }
       }
     }
     else {
       $read_path = $field_path;
-      if ($text) {
-        $read_path .= '/text()';
-      }
     }
 
     $ds_content = $object[$field->dsid]->content;
@@ -163,7 +160,6 @@ function get_field_values($field, $object, $parents = array(), $text = TRUE) {
       foreach ($xml_values as $xml_value) {
         $values[] = $xml_value->nodeValue;
       }
-     dpm($read_path);
     }
 
   }
