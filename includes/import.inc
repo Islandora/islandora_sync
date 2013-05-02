@@ -171,7 +171,7 @@ function get_field_values($field, $object, $parents = array()) {
 }
 
 function fedora_commons_export_save_field($field_info, &$entity, $value) {
-  $lang = isset($entity->language) ? $entity->language : 'und';
+  $lang = isset($entity->language) ? $entity->language : LANGUAGE_NONE;
   $id = isset($entity->nid) ? $entity->nid : user_password();
   $prepared_field = &$entity->{$field_info->field}[$lang];
   switch ($field_info->type) {

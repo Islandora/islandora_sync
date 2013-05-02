@@ -6,18 +6,15 @@ function fedora_commons_export_bundle_settings_form($form, $form_state, $bundle)
   $settings = fedora_commons_export_bundle_settings($bundle);
 
   if (isset($settings[0]->id)) {
-    $sync_fedora = $settings[0]->sync_fedora;
-    $selected_cmodels = fedora_commons_export_get_bundle_cmodels($settings[0]->id);
+    $settings = array_shift($settings);
+    $selected_cmodels = fedora_commons_export_get_bundle_cmodels($settings->id);
     $form['id'] = array(
       '#type' => 'value',
-      '#value' => $settings[0]->id,
+      '#value' => $settings->id,
     );
-    $namespace =  $settings[0]->namespace;
   }
   else {
-    $sync_fedora = FALSE;
-    $selected_cmodels = array();
-    $namespace = '';
+    $selected_cmodels = FALSE;
   }
 
   $form['bundle'] = array(
@@ -28,20 +25,35 @@ function fedora_commons_export_bundle_settings_form($form, $form_state, $bundle)
   $form['sync_fedora'] = array(
     '#type' => 'checkbox',
     '#title' => t('Sync nodes to Fedora'),
-    '#default_value' => $sync_fedora,
-  );
 
-  $form['namespace'] = array(
+  );
+  if (isset($settings->sync_fedora)) {
+    $form['sync_fedora']['#default_value'] = $settings->sync_fedora;
+  }
+  $form['sync_fedora_group'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Sync to Fedora Settings'),
+    '#collapsible' => FALSE,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="sync_fedora"]' => array('checked' => TRUE),
+      ),
+    ),
+  );
+  $form['sync_fedora_group']['namespace'] = array(
     '#type' => 'textfield',
     '#title' => t('Namespace'),
     '#description' => t('Object ID namespace'),
-    '#default_value' => $namespace,
   );
+  if (isset($settings->namespace)) {
+    $form['sync_fedora_group']['namespace']['#default_value'] = $settings->namespace;
+  }
 
   $content_models = drupal_map_assoc(fedora_commons_export_get_content_models());
 
-  $form['cmodel'] = array(
-    '#type' => 'select',
+  // @TODO: probably limit to single content model
+  $form['sync_fedora_group']['cmodel'] = array(
+    '#type' => 'radios',
     '#title' => t('Content model'),
     '#description' => t('The content models that this node type should be mapped to.'),
     '#options' => $content_models,
@@ -52,7 +64,27 @@ function fedora_commons_export_bundle_settings_form($form, $form_state, $bundle)
         ':input[name="sync_drupal"]' => array('checked' => FALSE),
       ),
     ),
-    '#default_value' => $selected_cmodels,
+  );
+  if ($selected_cmodels) {
+    $form['sync_fedora_group']['cmodel']['#default_value'] = $selected_cmodels;
+  }
+
+  $form['sync_drupal'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Sync objects to Drupal'),
+  );
+  if (isset($settings->sync_drupal)) {
+    $form['sync_drupal']['#default_value'] = $settings->sync_drupal;
+  }
+  $form['sync_drupal_group'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Sync to Drupal Settings'),
+    '#collapsible' => FALSE,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="sync_drupal"]' => array('checked' => TRUE),
+      ),
+    ),
   );
 
   $form['submit'] = array(
