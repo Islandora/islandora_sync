@@ -57,6 +57,7 @@ function fedora_commons_export_import_from_pid($pid, $type) {
   else {
     $node->uid = 1;
   }
+  node_save($node); // Call before adding fields to get nid, does this add noise to revisions?
   fedora_commons_export_build_node_fields($node, $object);
   node_save($node);
 
@@ -73,7 +74,6 @@ function fedora_commons_export_build_node_fields(&$node, $object) {
     AND fc.type != 'field_collection'",
     array(':bundle' => $node->type)
   )->fetchAll();
-  //@TODO: should exclude collection type fields
 
   foreach ($fields_to_populate as $field) {
     $values = get_field_values($field, $object);
@@ -83,7 +83,7 @@ function fedora_commons_export_build_node_fields(&$node, $object) {
         if (!is_array($node->{$field->field})) {   //@TODO: prevent notice
           $node->{$field->field} = array();
         }
-        fedora_commons_export_save_field($field, $node->{$field->field}[$node->language], $value);
+        fedora_commons_export_save_field($field, $node, $value);
       }
     }
     else {
@@ -100,7 +100,7 @@ function fedora_commons_export_build_node_fields(&$node, $object) {
     LEFT JOIN {field_config_instance} fci ON fci.field_name = fcef.field
     LEFT JOIN {field_config} fc ON fc.field_name = fci.bundle
     WHERE fc.type = 'field_collection'"
-  )->fetchAll();
+  )->fetchAllAssoc('field');
 
   $values = array();
   foreach ($field_collection_fields as $field_collection_field) {
@@ -122,7 +122,7 @@ function fedora_commons_export_build_node_fields(&$node, $object) {
 
         foreach ($fields as $k => $v) {
           if ($v[$i]) {
-            $field_collection_item->{$k}[$node->language][]['value'] = $v[$i];
+            fedora_commons_export_save_field($field_collection_fields[$k], $field_collection_item, $v[$i]);
           }
         }
         $field_collection_item->save();
@@ -164,17 +164,25 @@ function get_field_values($field, $object, $parents = array()) {
   }
   else {
     // managed datastream
-    $values[] = $object[$field->dsid]->content;
+    $values[] = array('content' => $object[$field->dsid]->content, 'mimetype' => $object[$field->dsid]->mimetype);  //@TODO: stream to get around memory constraints?
+
   }
   return $values;
 }
 
-function fedora_commons_export_save_field($field_info, &$prepared_field, $value) {
+function fedora_commons_export_save_field($field_info, &$entity, $value) {
+  $lang = isset($entity->language) ? $entity->language : 'und';
+  $id = isset($entity->nid) ? $entity->nid : user_password();
+  $prepared_field = &$entity->{$field_info->field}[$lang];
   switch ($field_info->type) {
     case 'image':
-      $file_name = $field_info->dsid . '-moo.jpg';  //@TODO: proper file name
-      $file = file_save_data($value, 'public://' . $file_name, FILE_EXISTS_RENAME);
+      module_load_include('inc', 'islandora', 'mime_detect');
+      $mime_detect = new MimeDetect();
+      $extension = $mime_detect->getExtension($value['mimetype']);
+      $file_name = $field_info->dsid . '-' . $entity->type . '-' . $id . '.' . $extension;
+      $file = file_save_data($value['content'], 'public://' . $file_name, FILE_EXISTS_RENAME);
       $prepared_field[] = (array) $file;
+      break;
     default:
       $prepared_field[]['value'] = $value;
   }
