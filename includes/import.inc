@@ -101,34 +101,35 @@ function fedora_commons_export_build_node_fields(&$node, $object) {
 
   $values = array();
   foreach ($field_collection_fields as $field_collection_field) {
-    $values[$field_collection_field->field]['bundle'] = get_field_values($field_collection_field, $object, array($field_collection_field->bundle));
+    $values[$field_collection_field->bundle][$field_collection_field->field] = get_field_values($field_collection_field, $object, array($field_collection_field->bundle), FALSE);
   }
 
-  $collection_count = 0;
-  foreach ($values as $value) {
-    if (count($value) > $collection_count) {
-      $collection_count = count($value);
+  foreach ($values AS $bundle => $fields) {
+    $collection_count = 0;
+    foreach ($fields as $value) {
+      if (count($value) > $collection_count) {
+        $collection_count = count($value);
+      }
     }
-  }
 
-  /*   !!Fields could be parts of different collections/bundles
-  if ($collection_count) {
-    for ($i = 0; $i < $collection_count; $i++) {
-      $field_collection_item = entity_create('field_collection_item', array('field_name' => $field_collection_field->bundle);
-      $field_collection_item->setHostEntity('node', $node);
+    if ($collection_count) {
+      for ($i = 0; $i < $collection_count; $i++) {
+        $field_collection_item = entity_create('field_collection_item', array('field_name' => $bundle));
+        $field_collection_item->setHostEntity('node', $node);
 
-      $field_collection_item->field_a_field_collection_field[$node->language][]['value'] = ...;
+        foreach ($fields as $k => $v) {
+          if ($v[$i]) {
+            $field_collection_item->{$k}[$node->language][]['value'] = $v[$i];
+          }
+        }
         $field_collection_item->save();
-
-       $node->field_my_field_collection[LANGUAGE_NONE][]['value'] = $field_collection_item->item_id;
+        $node->field_my_field_collection[$node->language][]['value'] = $field_collection_item->item_id;
+      }
     }
   }
-  */
-
-
 }
 
-function get_field_values($field, $object, $parents = array()) {
+function get_field_values($field, $object, $parents = array(), $text = TRUE) {
   $values = array();
 
   if ($field->export_type == 'xml_value') {
@@ -140,11 +141,17 @@ function get_field_values($field, $object, $parents = array()) {
       $parent_path = fedora_commons_export_get_parent_path($field, $parents);
       $read_path .= $parent_path;
       if ($field_path) {
-        $read_path .= '/' . $field_path . '/text()'; //@TODO: should text() be here?
+        $read_path .= '/' . $field_path; //@TODO: should text() be here?
+        if ($text) {
+          $read_path .= '/text()';
+        }
       }
     }
     else {
-      $read_path = $field_path . '/text()';
+      $read_path = $field_path;
+      if ($text) {
+        $read_path .= '/text()';
+      }
     }
 
     $ds_content = $object[$field->dsid]->content;
