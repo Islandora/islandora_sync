@@ -67,7 +67,7 @@ function fedora_commons_export_import_from_pid($pid, $type) {
 }
 
 function fedora_commons_export_build_node_fields(&$node, $object) {
-  $fields_to_populate = db_query("SELECT * FROM {fedora_commons_export_fields} fcef
+  $fields_to_populate = db_query("SELECT fcef.*, fc.type FROM {fedora_commons_export_fields} fcef
     LEFT JOIN {field_config} fc ON fc.field_name = fcef.field
     WHERE fcef.bundle = :bundle
     AND fc.type != 'field_collection'",
@@ -83,7 +83,7 @@ function fedora_commons_export_build_node_fields(&$node, $object) {
         if (!is_array($node->{$field->field})) {   //@TODO: prevent notice
           $node->{$field->field} = array();
         }
-        $node->{$field->field}[$node->language][]['value'] = $value;   //@TODO: may not be 'value' key
+        fedora_commons_export_save_field($field, $node->{$field->field}[$node->language], $value);
       }
     }
     else {
@@ -95,7 +95,7 @@ function fedora_commons_export_build_node_fields(&$node, $object) {
 
   }
 
-  // @TODO: field_collection children has the bundle of its parent
+  // @TODO: merge with query above and provide function with options to build query
   $field_collection_fields = db_query("SELECT * FROM {fedora_commons_export_fields} fcef
     LEFT JOIN {field_config_instance} fci ON fci.field_name = fcef.field
     LEFT JOIN {field_config} fc ON fc.field_name = fci.bundle
@@ -126,7 +126,6 @@ function fedora_commons_export_build_node_fields(&$node, $object) {
           }
         }
         $field_collection_item->save();
-        $node->field_my_field_collection[$node->language][]['value'] = $field_collection_item->item_id;
       }
     }
   }
@@ -168,4 +167,15 @@ function get_field_values($field, $object, $parents = array()) {
     $values[] = $object[$field->dsid]->content;
   }
   return $values;
+}
+
+function fedora_commons_export_save_field($field_info, &$prepared_field, $value) {
+  switch ($field_info->type) {
+    case 'image':
+      $file_name = $field_info->dsid . '-moo.jpg';  //@TODO: proper file name
+      $file = file_save_data($value, 'public://' . $file_name, FILE_EXISTS_RENAME);
+      $prepared_field[] = (array) $file;
+    default:
+      $prepared_field[]['value'] = $value;
+  }
 }
