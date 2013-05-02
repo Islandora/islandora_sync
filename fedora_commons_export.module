@@ -324,6 +324,7 @@ function fedora_commons_export_get_parent_path($field, $parents = array()) {
     $field_read_path = db_query("SELECT read_path FROM {fedora_commons_export_fields} WHERE field = :field",
       array(':field' => $parent)
     )->fetchField();
+    // @TODO: if document read context, get it and end
     if ($field_read_path && $field_read_path != $path) {
       $path .= '/' . $field_read_path;
     }
