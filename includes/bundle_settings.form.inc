@@ -25,7 +25,6 @@ function fedora_commons_export_bundle_settings_form($form, $form_state, $bundle)
   $form['sync_fedora'] = array(
     '#type' => 'checkbox',
     '#title' => t('Sync nodes to Fedora'),
-
   );
   if (isset($settings->sync_fedora)) {
     $form['sync_fedora']['#default_value'] = $settings->sync_fedora;
@@ -48,26 +47,9 @@ function fedora_commons_export_bundle_settings_form($form, $form_state, $bundle)
   if (isset($settings->namespace)) {
     $form['sync_fedora_group']['namespace']['#default_value'] = $settings->namespace;
   }
+  $form['sync_fedora_group']['sync_fedora_when'] = array(
 
-  $content_models = drupal_map_assoc(fedora_commons_export_get_content_models());
-
-  // @TODO: probably limit to single content model
-  $form['sync_fedora_group']['cmodel'] = array(
-    '#type' => 'radios',
-    '#title' => t('Content model'),
-    '#description' => t('The content models that this node type should be mapped to.'),
-    '#options' => $content_models,
-    '#multiple' => TRUE,
-    '#states' => array(
-      'invisible' => array(
-        ':input[name="sync_fedora"]' => array('checked' => FALSE),
-        ':input[name="sync_drupal"]' => array('checked' => FALSE),
-      ),
-    ),
   );
-  if ($selected_cmodels) {
-    $form['sync_fedora_group']['cmodel']['#default_value'] = $selected_cmodels;
-  }
 
   $form['sync_drupal'] = array(
     '#type' => 'checkbox',
@@ -86,6 +68,25 @@ function fedora_commons_export_bundle_settings_form($form, $form_state, $bundle)
       ),
     ),
   );
+
+  $content_models = drupal_map_assoc(fedora_commons_export_get_content_models());
+
+  $form['cmodel'] = array(
+    '#type' => 'radios',
+    '#title' => t('Content model'),
+    '#description' => t('The content model that this node type should be mapped to.'),
+    '#options' => $content_models,
+    '#multiple' => TRUE,
+    '#states' => array(
+      'invisible' => array(
+        ':input[name="sync_fedora"]' => array('checked' => FALSE),
+        ':input[name="sync_drupal"]' => array('checked' => FALSE),
+      ),
+    ),
+  );
+  if ($selected_cmodels) {
+    $form['sync_fedora_group']['cmodel']['#default_value'] = $selected_cmodels;
+  }
 
   $form['submit'] = array(
     '#type' => 'submit',

@@ -96,6 +96,12 @@ function fedora_commons_export_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
+      'sync_drupal' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
     ),
     'primary key' => array('id'),
   );
