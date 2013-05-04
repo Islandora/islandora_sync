@@ -14,7 +14,7 @@ function fedora_commons_export_bundle_settings_form($form, $form_state, $bundle)
     );
   }
   else {
-    $selected_cmodels = FALSE;
+    $selected_cmodels = array();
   }
 
   $form['bundle'] = array(
@@ -47,9 +47,36 @@ function fedora_commons_export_bundle_settings_form($form, $form_state, $bundle)
   if (isset($settings->namespace)) {
     $form['sync_fedora_group']['namespace']['#default_value'] = $settings->namespace;
   }
-  $form['sync_fedora_group']['sync_fedora_when'] = array(
-
+  $form['sync_fedora_group']['sync_fedora_timing'] = array(
+    '#type' => 'radios',
+    '#title' => t('Sync Timing'),
+    '#description' => t('When should Drupal nodes be synced to Fedora Commons?'),
+    '#options' => array(
+      'real_time' => t('Real time'),
+      'cron' => t('Cron'),
+    ),
   );
+  if (isset($settings->sync_fedora_timing)) {
+    $form['sync_fedora_group']['sync_fedora_timing']['#default_value'] = $settings->sync_fedora_timing;
+  }
+  $form['sync_fedora_group']['sync_fedora_create'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Sync node creation'),
+  );
+  $form['sync_fedora_group']['sync_fedora_create']['#default_value'] = isset($settings->sync_fedora_create) ?
+    $settings->sync_fedora_create : TRUE;
+  $form['sync_fedora_group']['sync_fedora_update'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Sync node updates'),
+  );
+  $form['sync_fedora_group']['sync_fedora_update']['#default_value'] = isset($settings->sync_fedora_update) ?
+    $settings->sync_fedora_update : TRUE;
+  $form['sync_fedora_group']['sync_fedora_delete'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Sync node deletion'),
+  );
+  $form['sync_fedora_group']['sync_fedora_delete']['#default_value'] = isset($settings->sync_fedora_delete) ?
+    $settings->sync_fedora_delete : TRUE;
 
   $form['sync_drupal'] = array(
     '#type' => 'checkbox',
@@ -68,6 +95,36 @@ function fedora_commons_export_bundle_settings_form($form, $form_state, $bundle)
       ),
     ),
   );
+  $form['sync_drupal_group']['sync_drupal_timing'] = array(
+    '#type' => 'radios',
+    '#title' => t('Sync Timing'),
+    '#description' => t('When should Fedora Commons objects be synced to Drupal?'),
+    '#options' => array(
+      'real_time' => t('Real time'),
+      'cron' => t('Cron'),
+    ),
+  );
+  if (isset($settings->sync_drupal_timing)) {
+    $form['sync_drupal_group']['sync_drupal_timing']['#default_value'] = $settings->sync_drupal_timing;
+  }
+  $form['sync_drupal_group']['sync_drupal_create'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Sync object creation'),
+  );
+  $form['sync_drupal_group']['sync_drupal_create']['#default_value'] = isset($settings->sync_drupal_create) ?
+    $settings->sync_drupal_create : TRUE;
+  $form['sync_drupal_group']['sync_drupal_update'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Sync object updates'),
+  );
+  $form['sync_drupal_group']['sync_drupal_update']['#default_value'] = isset($settings->sync_drupal_update) ?
+    $settings->sync_drupal_update : TRUE;
+  $form['sync_drupal_group']['sync_drupal_delete'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Sync object deletion'),
+  );
+  $form['sync_drupal_group']['sync_drupal_delete']['#default_value'] = isset($settings->sync_drupal_delete) ?
+    $settings->sync_drupal_delete : TRUE;
 
   $content_models = drupal_map_assoc(fedora_commons_export_get_content_models());
 
@@ -85,7 +142,7 @@ function fedora_commons_export_bundle_settings_form($form, $form_state, $bundle)
     ),
   );
   if ($selected_cmodels) {
-    $form['sync_fedora_group']['cmodel']['#default_value'] = $selected_cmodels;
+    $form['cmodel']['#default_value'] = $selected_cmodels[0];
   }
 
   $form['submit'] = array(
@@ -103,10 +160,9 @@ function fedora_commons_export_bundle_settings_form_validate($form, $form_state)
 }
 
 function fedora_commons_export_bundle_settings_form_submit($form, $form_state) {
-  $record['sync_fedora'] = $form_state['values']['sync_fedora'];
+  $record = $form_state['values'];
   $record['entity_type'] = 'node';
-  $record['bundle'] = $form_state['values']['bundle'];
-  $record['namespace'] = $form_state['values']['namespace'];
+
   if (isset($form_state['values']['id'])) {
     $record['id'] = $form_state['values']['id'];
     drupal_write_record('fedora_commons_export_type_settings', $record, 'id');
@@ -118,7 +174,7 @@ function fedora_commons_export_bundle_settings_form_submit($form, $form_state) {
   $existing_cmodels = fedora_commons_export_get_bundle_cmodels($record['id']);
 
   // Insert new cmodels
-  foreach ($form_state['values']['cmodel'] AS $cmodel) {
+  foreach (array($form_state['values']['cmodel']) AS $cmodel) {
     if (!in_array($cmodel, $existing_cmodels)) {
       $cmodel_record = array('id' => $record['id'], 'cmodel' => $cmodel);
       drupal_write_record('fedora_commons_export_type_cmodel', $cmodel_record);
@@ -126,7 +182,7 @@ function fedora_commons_export_bundle_settings_form_submit($form, $form_state) {
   }
 
   // Delete cmodels
-  $deleted_cmodels = array_diff($existing_cmodels, $form_state['values']['cmodel']);
+  $deleted_cmodels = array_diff($existing_cmodels, array($form_state['values']['cmodel']));
   foreach ($deleted_cmodels AS $deleted) {
     db_query('DELETE FROM {fedora_commons_export_type_cmodel} WHERE id = :id AND cmodel = :cmodel',
       array(':id' => $record['id'], ':cmodel' => $deleted)

@@ -90,6 +90,30 @@ function fedora_commons_export_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'sync_fedora_timing' => array(
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'sync_fedora_create' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'sync_fedora_update' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'sync_fedora_delete' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
       'namespace' => array(
         'type' => 'varchar',
         'length' => 64,
@@ -97,6 +121,30 @@ function fedora_commons_export_schema() {
         'default' => '',
       ),
       'sync_drupal' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'sync_drupal_timing' => array(
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'sync_drupal_create' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'sync_drupal_update' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'sync_drupal_delete' => array(
         'type' => 'int',
         'size' => 'tiny',
         'not null' => TRUE,
