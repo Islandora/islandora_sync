@@ -1,8 +1,8 @@
 <?php
 
-function fedora_commons_export_field_settings_form($form, $form_state, $type, $field) {
+function islandora_sync_field_settings_form($form, $form_state, $type, $field) {
   $type = str_replace('-', '_', $type);
-  $field_settings = fedora_commons_export_field_settings($type, $field);
+  $field_settings = islandora_sync_field_settings($type, $field);
   if (empty($field_settings)) {
     $settings = new stdClass();
     $settings->new = TRUE;
@@ -178,18 +178,18 @@ function fedora_commons_export_field_settings_form($form, $form_state, $type, $f
 //@TODO: clear fieldset values when parent checkbox is not checked, to avoid values getting stored
 //@TODO: validate that DS has been setup
 
-function fedora_commons_export_field_settings_form_submit($form, $form_state) {
+function islandora_sync_field_settings_form_submit($form, $form_state) {
   $values = $form_state['values'];
 
   // Update settings
   if (!$values['settings']->new) {
     unset($values['settings']);
-    drupal_write_record('fedora_commons_export_fields', $values, array('bundle', 'field'));
+    drupal_write_record('islandora_sync_fields', $values, array('bundle', 'field'));
   }
   else {
     // Insert settings
     unset($values['settings']);
-    drupal_write_record('fedora_commons_export_fields', $values);
+    drupal_write_record('islandora_sync_fields', $values);
   }
   drupal_set_message(t('Fedora Commons settings saved.'));
 }

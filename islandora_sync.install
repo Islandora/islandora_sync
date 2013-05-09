@@ -1,0 +1,218 @@
+<?php
+
+function islandora_sync_schema() {
+  $schema['islandora_sync_fields'] = array(
+    'description' => 'Track Fedora Commons export field settings',
+    'fields' => array(
+      'bundle' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+      ),
+      'field' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+      ),
+      'export' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'export_type' => array(
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+      ),
+      'dsid' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'create_context' => array(
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'create_path' => array(
+        'type' => 'text',
+        'size' => 'small',
+        'not null' => TRUE,
+      ),
+      'create_type' => array(
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'create_value' => array(
+        'type' => 'text',
+        'size' => 'small',
+        'not null' => TRUE,
+      ),
+      'read_context' => array(
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'read_path' => array(
+        'type' => 'text',
+        'size' => 'small',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('bundle', 'field'),
+  );
+  $schema['islandora_sync_type_settings'] = array(
+    'description' => '',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+      ),
+      'bundle' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+      ),
+      'sync_fedora' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'sync_fedora_timing' => array(
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'sync_fedora_create' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'sync_fedora_update' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'sync_fedora_delete' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'namespace' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'sync_drupal' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'sync_drupal_timing' => array(
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'sync_drupal_create' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'sync_drupal_update' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'sync_drupal_delete' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+  $schema['islandora_sync_type_cmodel'] = array(
+    'description' => '',
+    'fields' => array(
+      'id' => array(
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => 'true',
+      ),
+      'cmodel' => array(
+        'type' => 'varchar',
+        'length' => 128,
+      )
+    ),
+  );
+  $schema['islandora_sync_xml_ds'] = array(
+    'description' => '',
+    'fields' => array(
+      'ds_id' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'root' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'namespace_uri' => array(
+        'type' => 'varchar',
+        'length' => '256',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('ds_id'),
+  );
+  $schema['islandora_sync_xml_ds_namespaces'] = array(
+    'description' => '',
+    'fields' => array(
+      'ds_id' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'prefix' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'uri' => array(
+        'type' => 'varchar',
+        'length' => 256,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+  );
+  return $schema;
+}

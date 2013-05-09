@@ -1,7 +1,7 @@
 <?php
 
-function fedora_commons_export_xml_ds_page() {
-  $datastreams = db_query('SELECT * FROM {fedora_commons_export_xml_ds}')->fetchAll();
+function islandora_sync_xml_ds_page() {
+  $datastreams = db_query('SELECT * FROM {islandora_sync_xml_ds}')->fetchAll();
 
   $header = array(t('Datastream'), t('Edit'), t('Delete'));
   $rows = array();
@@ -16,7 +16,7 @@ function fedora_commons_export_xml_ds_page() {
   return theme('table', array('header' => $header, 'rows' => $rows));
 }
 
-function fedora_commons_export_xml_ds_add($form, $form_state) {
+function islandora_sync_xml_ds_add($form, $form_state) {
   $form = array();
   $form['#tree'] = TRUE;
   $form['ds_id'] = array(
@@ -59,13 +59,13 @@ function fedora_commons_export_xml_ds_add($form, $form_state) {
   $form['namespaces']['add_namespace'] = array(
     '#type' => 'submit',
     '#value' => t('Add Namespace'),
-    '#submit' => array('fedora_commons_export_xml_ds_add_namespace_add'),
+    '#submit' => array('islandora_sync_xml_ds_add_namespace_add'),
   );
   if ($form_state['namespace_count'] > 1) {
     $form['namespaces']['remove_namespace'] = array(
       '#type' => 'submit',
       '#value' => t('Remove Namespace'),
-      '#submit' => array('fedora_commons_export_xml_ds_add_namespace_remove'),
+      '#submit' => array('islandora_sync_xml_ds_add_namespace_remove'),
       '#limit_validation_errors' => array(),
     );
   }
@@ -76,18 +76,18 @@ function fedora_commons_export_xml_ds_add($form, $form_state) {
   return $form;
 }
 
-function fedora_commons_export_xml_ds_add_namespace_add($form, &$form_state) {
+function islandora_sync_xml_ds_add_namespace_add($form, &$form_state) {
   $form_state['namespace_count']++;
   $form_state['rebuild'] = TRUE;
 }
 
-function fedora_commons_export_xml_ds_add_namespace_remove($form, &$form_state) {
+function islandora_sync_xml_ds_add_namespace_remove($form, &$form_state) {
   $form_state['namespace_count']--;
   $form_state['rebuild'] = TRUE;
 }
 
-function fedora_commons_export_xml_ds_add_validate($form, $form_state) {
-  $dsid_exists = db_query('SELECT 1 FROM {fedora_commons_export_xml_ds} WHERE ds_id = :ds_id',
+function islandora_sync_xml_ds_add_validate($form, $form_state) {
+  $dsid_exists = db_query('SELECT 1 FROM {islandora_sync_xml_ds} WHERE ds_id = :ds_id',
     array('ds_id' => $form_state['values']['ds_id'])  //@TODO: handle ds_id case
   )->fetchAll();
   if ($dsid_exists) {
@@ -95,26 +95,26 @@ function fedora_commons_export_xml_ds_add_validate($form, $form_state) {
   }
 }
 
-function fedora_commons_export_xml_ds_add_submit($form, &$form_state) {
+function islandora_sync_xml_ds_add_submit($form, &$form_state) {
   $values = $form_state['values'];
   $record = array('ds_id' => $values['ds_id'], 'root' => $values['root'], 'namespace_uri' => $values['namespace_uri']);
-  drupal_write_record('fedora_commons_export_xml_ds', $record);
+  drupal_write_record('islandora_sync_xml_ds', $record);
 
   foreach ($values['namespaces'] AS $namespace) {
     if (is_array($namespace)) {
       $record = array('ds_id' => $values['ds_id'], 'prefix' => $namespace['prefix'], 'uri' => $namespace['uri']);
-      drupal_write_record('fedora_commons_export_xml_ds_namespaces', $record);
+      drupal_write_record('islandora_sync_xml_ds_namespaces', $record);
     }
   }
   drupal_set_message(t('Datastream settings saved'));
   $form_state['redirect'] = 'admin/islandora/fedora-export/xml-datastreams';
 }
 
-function fedora_commons_export_xml_ds_edit($form, $form_state, $ds_id) {
+function islandora_sync_xml_ds_edit($form, $form_state, $ds_id) {
 
 }
 
-function fedora_commons_export_xml_ds_delete($form, $form_state, $ds_id) {
+function islandora_sync_xml_ds_delete($form, $form_state, $ds_id) {
   $confirm_text = t('Delete datastream settings?');
   $form['ds_id'] = array(
     '#type' => 'value',
@@ -123,9 +123,9 @@ function fedora_commons_export_xml_ds_delete($form, $form_state, $ds_id) {
   return confirm_form($form, $confirm_text, 'admin/islandora/fedora-export/xml-datastreams');
 }
 
-function fedora_commons_export_xml_ds_delete_submit($form, &$form_state) {
-  db_query('DELETE FROM {fedora_commons_export_xml_ds} WHERE ds_id = :ds_id', array(':ds_id' => $form_state['values']['ds_id']));
-  db_query('DELETE FROM {fedora_commons_export_xml_ds_namespaces} WHERE ds_id = :ds_id', array(':ds_id' => $form_state['values']['ds_id']));
+function islandora_sync_xml_ds_delete_submit($form, &$form_state) {
+  db_query('DELETE FROM {islandora_sync_xml_ds} WHERE ds_id = :ds_id', array(':ds_id' => $form_state['values']['ds_id']));
+  db_query('DELETE FROM {islandora_sync_xml_ds_namespaces} WHERE ds_id = :ds_id', array(':ds_id' => $form_state['values']['ds_id']));
   drupal_set_message(t('Datastream settings deleted'));
   $form_state['redirect'] = 'admin/islandora/fedora-export/xml-datastreams';
 }

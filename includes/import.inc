@@ -1,6 +1,6 @@
 <?php
 
-function fedora_commons_export_batch_import_form($form, $form_state) {
+function islandora_sync_batch_import_form($form, $form_state) {
   $form = array();
 
   $form['pid'] = array(
@@ -22,26 +22,26 @@ function fedora_commons_export_batch_import_form($form, $form_state) {
   return $form;
 }
 
-function fedora_commons_export_batch_import_form_validate($form, $form_state) {
+function islandora_sync_batch_import_form_validate($form, $form_state) {
   module_load_include('inc', 'islandora', 'includes/utilities');
   if (!islandora_is_valid_pid($form_state['values']['pid'])) {
     form_set_error('pid', t('Please enter a valid PID'));
   }
 }
 
-function fedora_commons_export_batch_import_form_submit($form, $form_state) {
-  fedora_commons_export_import_batch(array($form_state['values']['pid']), $form_state['values']['node_type']);
+function islandora_sync_batch_import_form_submit($form, $form_state) {
+  islandora_sync_import_batch(array($form_state['values']['pid']), $form_state['values']['node_type']);
 }
 
-function fedora_commons_export_import_batch($pids, $type) {
+function islandora_sync_import_batch($pids, $type) {
 
   foreach ($pids AS $pid) {
-    $node_id = fedora_commons_export_import_from_pid($pid, $type);
+    $node_id = islandora_sync_import_from_pid($pid, $type);
     drupal_set_message(t('Imported object: @pid to node/@id', array('@pid' => $pid, '@id' => $node_id)));
   }
 }
 
-function fedora_commons_export_import_from_pid($pid, $type) {
+function islandora_sync_import_from_pid($pid, $type) {
   $object = islandora_object_load($pid);
 
   $node = new stdClass();
@@ -58,7 +58,7 @@ function fedora_commons_export_import_from_pid($pid, $type) {
     $node->uid = 1;
   }
   node_save($node); // Call before adding fields to get nid, does this add noise to revisions?
-  fedora_commons_export_build_node_fields($node, $object);
+  islandora_sync_build_node_fields($node, $object);
   node_save($node);
 
   /*
@@ -67,8 +67,8 @@ function fedora_commons_export_import_from_pid($pid, $type) {
   return $node->nid;
 }
 
-function fedora_commons_export_build_node_fields(&$node, $object) {
-  $fields_to_populate = db_query("SELECT fcef.*, fc.type FROM {fedora_commons_export_fields} fcef
+function islandora_sync_build_node_fields(&$node, $object) {
+  $fields_to_populate = db_query("SELECT fcef.*, fc.type FROM {islandora_sync_fields} fcef
     LEFT JOIN {field_config} fc ON fc.field_name = fcef.field
     WHERE fcef.bundle = :bundle
     AND fc.type != 'field_collection'",
@@ -83,7 +83,7 @@ function fedora_commons_export_build_node_fields(&$node, $object) {
         if (!is_array($node->{$field->field})) {   //@TODO: prevent notice
           $node->{$field->field} = array();
         }
-        fedora_commons_export_save_field($field, $node, $value);
+        islandora_sync_save_field($field, $node, $value);
       }
     }
     else {
@@ -96,7 +96,7 @@ function fedora_commons_export_build_node_fields(&$node, $object) {
   }
 
   // @TODO: merge with query above and provide function with options to build query
-  $field_collection_fields = db_query("SELECT * FROM {fedora_commons_export_fields} fcef
+  $field_collection_fields = db_query("SELECT * FROM {islandora_sync_fields} fcef
     LEFT JOIN {field_config_instance} fci ON fci.field_name = fcef.field
     LEFT JOIN {field_config} fc ON fc.field_name = fci.bundle
     WHERE fc.type = 'field_collection'"
@@ -122,7 +122,7 @@ function fedora_commons_export_build_node_fields(&$node, $object) {
 
         foreach ($fields as $k => $v) {
           if ($v[$i]) {
-            fedora_commons_export_save_field($field_collection_fields[$k], $field_collection_item, $v[$i]);
+            islandora_sync_save_field($field_collection_fields[$k], $field_collection_item, $v[$i]);
           }
         }
         $field_collection_item->save();
@@ -136,11 +136,11 @@ function get_field_values($field, $object, $parents = array()) {
 
   if ($field->export_type == 'xml_value') {
     $read_path = '/mods:mods';   //@TODO: create root element
-    $field_path = db_query("SELECT read_path FROM {fedora_commons_export_fields} WHERE field = :field AND bundle = :bundle",
+    $field_path = db_query("SELECT read_path FROM {islandora_sync_fields} WHERE field = :field AND bundle = :bundle",
       array(':field' => $field->field, ':bundle' => $field->bundle)
     )->fetchField();
     if ($field->read_context == 'parent') {
-      $parent_path = fedora_commons_export_get_parent_path($field, $parents);
+      $parent_path = islandora_sync_get_parent_path($field, $parents);
       $read_path .= $parent_path;
       if ($field_path) {
         $read_path .= '/' . $field_path; //@TODO: should text() be here?
@@ -170,7 +170,7 @@ function get_field_values($field, $object, $parents = array()) {
   return $values;
 }
 
-function fedora_commons_export_save_field($field_info, &$entity, $value) {
+function islandora_sync_save_field($field_info, &$entity, $value) {
   $lang = isset($entity->language) ? $entity->language : LANGUAGE_NONE;
   $id = isset($entity->nid) ? $entity->nid : user_password();
   $prepared_field = &$entity->{$field_info->field}[$lang];

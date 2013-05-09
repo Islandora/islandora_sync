@@ -1,13 +1,13 @@
 <?php
 
-function fedora_commons_export_bundle_settings_form($form, $form_state, $bundle) {
+function islandora_sync_bundle_settings_form($form, $form_state, $bundle) {
   $form = array();
   $bundle = str_replace('-', '_', $bundle);
-  $settings = fedora_commons_export_bundle_settings($bundle);
+  $settings = islandora_sync_bundle_settings($bundle);
 
   if (isset($settings[0]->id)) {
     $settings = array_shift($settings);
-    $selected_cmodels = fedora_commons_export_get_bundle_cmodels($settings->id);
+    $selected_cmodels = islandora_sync_get_bundle_cmodels($settings->id);
     $form['id'] = array(
       '#type' => 'value',
       '#value' => $settings->id,
@@ -126,7 +126,7 @@ function fedora_commons_export_bundle_settings_form($form, $form_state, $bundle)
   $form['sync_drupal_group']['sync_drupal_delete']['#default_value'] = isset($settings->sync_drupal_delete) ?
     $settings->sync_drupal_delete : TRUE;
 
-  $content_models = drupal_map_assoc(fedora_commons_export_get_content_models());
+  $content_models = drupal_map_assoc(islandora_sync_get_content_models());
 
   $form['cmodel'] = array(
     '#type' => 'radios',
@@ -152,39 +152,39 @@ function fedora_commons_export_bundle_settings_form($form, $form_state, $bundle)
   return $form;
 }
 
-function fedora_commons_export_bundle_settings_form_validate($form, $form_state) {
+function islandora_sync_bundle_settings_form_validate($form, $form_state) {
   module_load_include('inc', 'islandora', 'includes/utilities');
   if (!empty($form_state['values']['namespace']) && !islandora_is_valid_namespace($form_state['values']['namespace'])) {
     form_set_error('namespace', t('Please enter a valid namespace'));
   }
 }
 
-function fedora_commons_export_bundle_settings_form_submit($form, $form_state) {
+function islandora_sync_bundle_settings_form_submit($form, $form_state) {
   $record = $form_state['values'];
   $record['entity_type'] = 'node';
 
   if (isset($form_state['values']['id'])) {
     $record['id'] = $form_state['values']['id'];
-    drupal_write_record('fedora_commons_export_type_settings', $record, 'id');
+    drupal_write_record('islandora_sync_type_settings', $record, 'id');
   }
   else {
-    drupal_write_record('fedora_commons_export_type_settings', $record);
+    drupal_write_record('islandora_sync_type_settings', $record);
   }
 
-  $existing_cmodels = fedora_commons_export_get_bundle_cmodels($record['id']);
+  $existing_cmodels = islandora_sync_get_bundle_cmodels($record['id']);
 
   // Insert new cmodels
   foreach (array($form_state['values']['cmodel']) AS $cmodel) {
     if (!in_array($cmodel, $existing_cmodels)) {
       $cmodel_record = array('id' => $record['id'], 'cmodel' => $cmodel);
-      drupal_write_record('fedora_commons_export_type_cmodel', $cmodel_record);
+      drupal_write_record('islandora_sync_type_cmodel', $cmodel_record);
     }
   }
 
   // Delete cmodels
   $deleted_cmodels = array_diff($existing_cmodels, array($form_state['values']['cmodel']));
   foreach ($deleted_cmodels AS $deleted) {
-    db_query('DELETE FROM {fedora_commons_export_type_cmodel} WHERE id = :id AND cmodel = :cmodel',
+    db_query('DELETE FROM {islandora_sync_type_cmodel} WHERE id = :id AND cmodel = :cmodel',
       array(':id' => $record['id'], ':cmodel' => $deleted)
     );
   }

@@ -1,0 +1,5 @@
+name = Islandora Sync
+description = Sync data between Drupal to Fedora Commons
+core = 7.x
+dependencies[] = islandora
+dependencies[] = field_ui
