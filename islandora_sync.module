@@ -82,7 +82,20 @@ function islandora_sync_permission() {
  * Implements hook_islandora_object_ingested().
  */
 function islandora_sync_islandora_object_ingested(FedoraObject $object) {
+  // How can/should multiple cmodels be handled?
+  $bundle_info = db_query("SELECT * FROM {islandora_sync_type_settings} ists
+    INNER JOIN {islandora_sync_type_cmodel} istc ON istc.id = ists.id
+    WHERE istc.cmodel IN (:models)
+    AND ists.sync_drupal = 1", array(':models' => $object->models)
+  )->fetchObject();
 
+  if ($bundle_info->sync_drupal_timing == 'real_time') {
+    module_load_include('inc', 'islandora_sync', 'includes/import');
+    islandora_sync_import_from_pid($object->id, $bundle_info->bundle);
+  }
+  else {
+    // @TODO: log/queue for cron
+  }
 }
 
 /**

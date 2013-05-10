@@ -56,7 +56,7 @@ function islandora_sync_bundle_settings_form($form, $form_state, $bundle) {
       'cron' => t('Cron'),
     ),
   );
-  if ($settings->sync_fedora_timing) {
+  if (isset($settings->sync_fedora_timing) && $settings->sync_fedora_timing) {
     $form['sync_fedora_group']['sync_fedora_timing']['#default_value'] = $settings->sync_fedora_timing;
   }
   $form['sync_fedora_group']['sync_fedora_create'] = array(
@@ -104,7 +104,7 @@ function islandora_sync_bundle_settings_form($form, $form_state, $bundle) {
       'cron' => t('Cron'),
     ),
   );
-  if ($settings->sync_drupal_timing) {
+  if (isset($settings->sync_drupal_timing) && $settings->sync_drupal_timing) {
     $form['sync_drupal_group']['sync_drupal_timing']['#default_value'] = $settings->sync_drupal_timing;
   }
   $form['sync_drupal_group']['sync_drupal_create'] = array(
