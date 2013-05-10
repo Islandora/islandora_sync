@@ -5,8 +5,7 @@ function islandora_sync_bundle_settings_form($form, $form_state, $bundle) {
   $bundle = str_replace('-', '_', $bundle);
   $settings = islandora_sync_bundle_settings($bundle);
 
-  if (isset($settings[0]->id)) {
-    $settings = array_shift($settings);
+  if (isset($settings->id)) {
     $selected_cmodels = islandora_sync_get_bundle_cmodels($settings->id);
     $form['id'] = array(
       '#type' => 'value',

@@ -253,5 +253,31 @@ function islandora_sync_schema() {
     ),
     'primary key' => array('id'),
   );
+  $schema['islandora_sync_map'] = array(
+    'description' => '',
+    'fields' => array(
+      'pid' => array(
+        'type' => 'varchar',
+        'length' => 128,
+      ),
+      'type' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'bundle' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'entity_id' => array(
+        'type' => 'varchar',
+        'length' => 128,
+      ),
+    ),
+    'primary key' => array('pid', 'entity_id'),
+  );
   return $schema;
 }

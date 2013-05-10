@@ -78,11 +78,12 @@ function islandora_sync_islandora_object_ingested(FedoraObject $object) {
   $bundle_info = db_query("SELECT * FROM {islandora_sync_type_settings} ists
     INNER JOIN {islandora_sync_type_cmodel} istc ON istc.id = ists.id
     WHERE istc.cmodel IN (:models)
-    AND ists.sync_drupal = 1", array(':models' => $object->models)
+    AND ists.sync_drupal = 1
+    AND ists.sync_drupal_create", array(':models' => $object->models)
   )->fetchObject();
 
   if ($bundle_info->sync_drupal_timing == 'real_time') {
-    module_load_include('inc', 'islandora_sync', 'includes/import');
+    module_load_include('inc', 'islandora_sync', 'includes/import_to_drupal');
     islandora_sync_import_from_pid($object->id, $bundle_info->bundle);
   }
   else {
@@ -98,12 +99,20 @@ function islandora_sync_islandora_object_ingested(FedoraObject $object) {
  * Implements hook_cron().
  */
 function islandora_sync_cron() {
-  module_load_include('inc', 'islandora_sync', 'includes/import');
+  module_load_include('inc', 'islandora_sync', 'includes/import_to_drupal');
+  module_load_include('inc', 'islandora_sync', 'includes/export_to_fedora');
   $queue_items = db_query("SELECT * FROM {islandora_sync_queue} WHERE processed_time IS NULL ORDER BY id ASC")->fetchALL();
   foreach ($queue_items as $item) {
     switch ($item->operation) {
       case 'sync_drupal':
         islandora_sync_import_from_pid($item->pid, $item->bundle);
+        break;
+
+      case 'sync_fedora':
+        $node = node_load($item->entity_id);
+        $type_info = islandora_sync_bundle_settings($item->bundle);
+        islandora_sync_export_from_node($node, $type_info);
+        break;
 
     }
 
@@ -119,31 +128,18 @@ function islandora_sync_cron() {
 function islandora_sync_node_insert($node) {
   $type_info = islandora_sync_bundle_settings($node->type);
 
-  if (isset($type_info[0]->id) && $type_info[0]->sync_fedora) {
-    module_load_include('inc', 'islandora', 'includes/utilities');
-    $cmodels = islandora_sync_get_bundle_cmodels($type_info[0]->id);
-    $namespace = $type_info[0]->namespace ? $type_info[0]->namespace : 'default';
-    $object = islandora_prepare_new_object($namespace, $node->title, array(), $cmodels, array());
-
-    $user = user_load($node->uid);
-    $object->owner = $user->name;
-
-    $object = islandora_add_object($object);
-
-    // Build datastreams.
-    $datastreams = islandora_sync_build_datastreams($node);
-
-    foreach ($datastreams as $ds_id => $datastream) {
-      // @TODO: proper datastream construction.
-      $ds = $object->constructDatastream($ds_id, 'M');
-      $ds->label = $ds_id . ' Record';
-      $ds->mimetype = 'text/xml';
-      $ds->setContentFromString($datastream['content']);
-      $object->ingestDatastream($ds);
+  if (isset($type_info->id) && $type_info->sync_fedora && $type_info->sync_fedora_create) {
+    if ($type_info->sync_fedora_timing == 'real_time') {
+      module_load_include('inc', 'islandora_sync', 'includes/export_to_fedora');
+      islandora_sync_export_from_node($node, $type_info);
     }
-    // Log state of sync
-
-    watchdog('mitch', 'Created object ' . $object->id);
+    else {
+      $queue['type'] = $type_info->entity_type;
+      $queue['bundle'] = $type_info->bundle;
+      $queue['entity_id'] = $node->nid;
+      $queue['operation'] = 'sync_fedora';
+      drupal_write_record('islandora_sync_queue', $queue);
+    }
   }
 
 }
@@ -218,124 +214,6 @@ function islandora_sync_get_content_models() {
   return $content_models;
 }
 
-function islandora_sync_build_datastreams($node) {
-  $fields = db_query("SELECT * FROM {islandora_sync_fields} WHERE bundle = :bundle AND export = 1",
-    array(':bundle' => $node->type)
-  )->fetchAll();
-
-  $datastreams = array();
-  foreach ($fields as $field) {
-    $values = field_get_items('node', $node, $field->field); //@TODO: proper language handling
-    if ($values) {
-      $dsid = $field->dsid;
-      if (!isset($datastreams[$dsid])) {
-        $datastreams[$dsid]['type'] = $field->export_type;
-        $datastreams[$dsid]['content'] = '';
-      }
-      foreach ($values as $value) {
-        $datastreams[$dsid]['content'] = islandora_sync_build_ds_content($datastreams[$dsid]['content'], reset($value), $field);
-      }
-    }
-  }
-
-  return $datastreams;
-}
-
-function islandora_sync_build_ds_content($content, $node_field, $field_info) {
-  switch ($field_info->export_type) {
-    case 'xml_value':
-      if (empty($content)) {
-        $content = islandora_sync_init_xml_datastream($field_info);
-      }
-      $content = islandora_sync_build_xml_datastream($content, $node_field, $field_info);
-      break;
-
-    case 'managed_datastream':
-      break;
-  }
-  return $content;
-}
-
-function islandora_sync_init_xml_datastream($field_info) {
-  $ds_info = db_query('SELECT * FROM {islandora_sync_xml_ds} WHERE ds_id = :ds_id',
-    array('ds_id' => $field_info->dsid)
-  )->fetchAll();
-  $namespaces = db_query('SELECT * FROM {islandora_sync_xml_ds_namespaces} WHERE ds_id = :ds_id',
-    array('ds_id' => $field_info->dsid)
-  )->fetchAll();
-
-  $doc = new DOMDocument();
-  $root = $doc->createElement($ds_info[0]->root);
-  if ($ds_info[0]->namespace_uri) {
-    $root->setAttribute('xmlns', $ds_info[0]->namespace_uri);
-  }
-
-  foreach ($namespaces as $namespace) {
-    $root->setAttribute('xmlns:' . $namespace->prefix, $namespace->uri);
-  }
-
-  $doc->appendChild($root);
-  return $doc->saveXML(); // @TODO: pass around DOMDocument rather than string
-}
-
-function islandora_sync_build_xml_datastream($content, $node_field_value, $field_info) {
-  $xml_doc = new DOMDocument();
-  $xml_doc->loadXML($content);
-  switch ($field_info->create_type) {
-    case 'element':
-      $dom_xpath = new DOMXPath($xml_doc);
-      $path_part = explode('/', $field_info->create_value);
-      $current_path = '';
-      $part_count = count($path_part);
-      $parent = NULL;
-      for ($i = 0; $i < $part_count; $i++) {
-        $path = $path_part[$i];
-        $value = NULL;
-        if (empty($current_path)) {
-          $current_path .= '/'; //@TODO: check if XML root has been provided if document context
-        }
-        if ($i == ($part_count - 1)) {
-          $value = $node_field_value;
-        }
-
-        $current_path = $current_path . $path;
-        $xpath = $dom_xpath->query($current_path);
-        if (!$xpath->length) {
-          // Need to create
-          $namespaced = explode(':', $path);
-          if (count($namespaced) > 1) {
-            $ns_uri = _get_ns_uri($namespaced[0]);
-            $new_element = $xml_doc->createElementNS($ns_uri, $path, $value);
-          }
-          else {
-            $new_element = $xml_doc->createElement($path, $value);
-          }
-          if ($i > 0 && !is_null($parent)) {
-          //@TODO: parent vs doc
-            $parent->appendChild($new_element);
-          }
-          else {
-            $xml_doc->documentElement->appendChild($new_element);
-          }
-          $parent = $new_element;
-        }
-      }
-      break;
-    case 'attribute':
-
-      break;
-    case 'xml':
-      $value = $field_info->create_value;
-      $value = str_replace('%value%', $node_field_value, $value);
-      $fragment = $xml_doc->createDocumentFragment();
-      $fragment->appendXML($value);
-      $xml_doc->documentElement->appendChild($fragment);
-      break;
-  }
-  $content = $xml_doc->saveXML();
-  return $content;
-}
-
 function islandora_sync_get_bundle_cmodels($bundle_settings_id) {
   $cmodels = db_query("SELECT cmodel FROM {islandora_sync_type_cmodel} WHERE id = :id",
     array(':id' => $bundle_settings_id)
@@ -346,7 +224,7 @@ function islandora_sync_get_bundle_cmodels($bundle_settings_id) {
 function islandora_sync_bundle_settings($bundle) {
   $settings = db_query("SELECT * FROM {islandora_sync_type_settings} WHERE entity_type = 'node' AND bundle = :bundle",
     array(':bundle' => $bundle)
-  )->fetchAll();
+  )->fetchObject();
   return $settings;
 }
 
@@ -355,13 +233,6 @@ function islandora_sync_field_settings($type, $field) {
     array(':bundle' => $type, ':field' => $field)
   )->fetchAll();
   return $settings;
-}
-
-function _get_ns_uri($namespace) {
-  $ns = db_query("SELECT uri FROM {islandora_sync_xml_ds_namespaces} WHERE prefix = :prefix",
-    array(':prefix' => $namespace)
-  )->fetchAll();
-  return $ns[0]->uri;
 }
 
 function islandora_sync_get_parent_path($field, $parents = array()) {
@@ -420,3 +291,4 @@ function islandora_sync_get_parent_fields($field, $bundle, $parents) {
 
   return $parents;
 }
+
