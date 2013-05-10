@@ -1,11 +1,19 @@
 <?php
 
+/**
+ * @file
+ * Sync data between Drupal and Fedora Commons.
+ */
+
+/**
+ * Implements hook_menu().
+ */
 function islandora_sync_menu() {
   $items['admin/structure/types/manage/%/fedora'] = array(
     'title' => 'Fedora Commons',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('islandora_sync_bundle_settings_form', 4),
-    'access arguments' => array('fedora commons export settings'),
+    'access arguments' => array('islandora sync settings'),
     'type' => MENU_LOCAL_TASK,
     'file' => 'includes/bundle_settings.form.inc',
   );
@@ -13,14 +21,14 @@ function islandora_sync_menu() {
     'title' => 'Fedora Commons',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('islandora_sync_field_settings_form', 4, 6),
-    'access arguments' => array('fedora commons export settings'),
+    'access arguments' => array('islandora sync settings'),
     'type' => MENU_LOCAL_TASK,
     'file' => 'includes/field_settings.form.inc',
   );
   $items['admin/islandora/fedora-export/xml-datastreams'] = array(
     'title' => 'XML Datastream Settings',
     'page callback' => 'islandora_sync_xml_ds_page',
-    'access arguments' => array('fedora commons export settings'),
+    'access arguments' => array('islandora sync settings'),
     'type' => MENU_NORMAL_ITEM,
     'file' => 'includes/xml_ds_settings.form.inc',
   );
@@ -28,7 +36,7 @@ function islandora_sync_menu() {
     'title' => 'Add XML Datastream Settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('islandora_sync_xml_ds_add'),
-    'access arguments' => array('fedora commons export settings'),
+    'access arguments' => array('islandora sync settings'),
     'type' => MENU_LOCAL_ACTION,
     'file' => 'includes/xml_ds_settings.form.inc',
   );
@@ -36,7 +44,7 @@ function islandora_sync_menu() {
     'title' => 'Edit XML Datastream Settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('islandora_sync_xml_ds_edit', 4),
-    'access arguments' => array('fedora commons export settings'),
+    'access arguments' => array('islandora sync settings'),
     'type' => MENU_CALLBACK,
     'file' => 'includes/xml_ds_settings.form.inc',
   );
@@ -44,7 +52,7 @@ function islandora_sync_menu() {
     'title' => 'Delete XML Datastream Settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('islandora_sync_xml_ds_delete', 4),
-    'access arguments' => array('fedora commons export settings'),
+    'access arguments' => array('islandora sync settings'),
     'type' => MENU_CALLBACK,
     'file' => 'includes/xml_ds_settings.form.inc',
   );
@@ -52,41 +60,53 @@ function islandora_sync_menu() {
     'title' => 'Batch Import Fedora Objects',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('islandora_sync_batch_import_form'),
-    'access arguments' => array('fedora commons export settings'),
+    'access arguments' => array('islandora sync settings'),
     'type' => MENU_NORMAL_ITEM,
     'file' => 'includes/import.inc',
   );
   return $items;
 }
 
+/**
+ * Implements hook_permission().
+ */
 function islandora_sync_permission() {
   return array(
-    'fedora commons export settings' => array(
-      'title' => t('Administer Fedora Commons export settings'),
+    'islandora sync settings' => array(
+      'title' => t('Administer Islandora sync settings'),
     ),
   );
 }
 
+/**
+ * Implements hook_islandora_object_ingested().
+ */
+function islandora_sync_islandora_object_ingested(FedoraObject $object) {
+
+}
+
+/**
+ * Implements hook_node_insert().
+ */
 function islandora_sync_node_insert($node) {
   $type_info = islandora_sync_bundle_settings($node->type);
 
   if (isset($type_info[0]->id) && $type_info[0]->sync_fedora) {
     module_load_include('inc', 'islandora', 'includes/utilities');
     $cmodels = islandora_sync_get_bundle_cmodels($type_info[0]->id);
-
-    $namespace = $type_info[0]->namespace ?  $type_info[0]->namespace : 'default';
+    $namespace = $type_info[0]->namespace ? $type_info[0]->namespace : 'default';
     $object = islandora_prepare_new_object($namespace, $node->title, array(), $cmodels, array());
 
-    // Properly set creator
     $user = user_load($node->uid);
     $object->owner = $user->name;
 
     $object = islandora_add_object($object);
 
-    // Build datastreams
+    // Build datastreams.
     $datastreams = islandora_sync_build_datastreams($node);
 
     foreach ($datastreams as $ds_id => $datastream) {
+      // @TODO: proper datastream construction.
       $ds = $object->constructDatastream($ds_id, 'M');
       $ds->label = $ds_id . ' Record';
       $ds->mimetype = 'text/xml';
@@ -100,16 +120,18 @@ function islandora_sync_node_insert($node) {
 
 }
 
+/**
+ * Implements hook_node_update().
+ */
 function islandora_sync_node_update($node) {
 
 }
 
 function islandora_sync_module_implements_alter(&$implementations, $hook) {
-  if (($hook == 'form_field_ui_field_overview_form_alter' || $hook ==  'form_alter')
-    && isset($implementations['islandora_sync'])) {
-      $group = $implementations['islandora_sync'];
-      unset($implementations['islandora_sync']);
-      $implementations['islandora_sync'] = $group;
+  if (($hook == 'form_field_ui_field_overview_form_alter' || $hook == 'form_alter') && isset($implementations['islandora_sync'])) {
+    $group = $implementations['islandora_sync'];
+    unset($implementations['islandora_sync']);
+    $implementations['islandora_sync'] = $group;
   }
 }
 
@@ -237,7 +259,7 @@ function islandora_sync_build_xml_datastream($content, $node_field_value, $field
       $path_part = explode('/', $field_info->create_value);
       $current_path = '';
       $part_count = count($path_part);
-      $parent = null;
+      $parent = NULL;
       for ($i = 0; $i < $part_count; $i++) {
         $path = $path_part[$i];
         $value = NULL;
