@@ -151,6 +151,9 @@ function islandora_sync_node_update($node) {
 
 }
 
+/**
+ * Implements hook_module_implements_alter().
+ */
 function islandora_sync_module_implements_alter(&$implementations, $hook) {
   if (($hook == 'form_field_ui_field_overview_form_alter' || $hook == 'form_alter') && isset($implementations['islandora_sync'])) {
     $group = $implementations['islandora_sync'];
@@ -159,6 +162,9 @@ function islandora_sync_module_implements_alter(&$implementations, $hook) {
   }
 }
 
+/**
+ * Implements hook_form_field_ui_field_overview_form_alter().
+ */
 function islandora_sync_form_field_ui_field_overview_form_alter(&$form, &$form_state, $form_id) {
   $form['fields']['#header'][6]['colspan'] = 3;  //@TODO: don't hardcode
   foreach ($form['fields'] as $field_name => $values) {
@@ -177,6 +183,9 @@ function islandora_sync_form_field_ui_field_overview_form_alter(&$form, &$form_s
   }
 }
 
+/**
+ * Implements hook_features_api().
+ */
 function islandora_sync_features_api() {
   return array(
     'field_datastreams' => array(
@@ -194,13 +203,13 @@ function islandora_sync_get_content_models() {
   $connection = new IslandoraTuque();
 
   $query = 'select $object  $model from <#ri>
-  where (walk($model <fedora-model:hasModel><info:fedora/fedora-system:ContentModel-3.0>
-  and $model <fedora-model:hasModel> $object))
-  minus $object <mulgara:is><info:fedora/fedora-system:FedoraObject-3.0>
-  minus $object <mulgara:is><info:fedora/fedora-system:ContentModel-3.0>
-  minus $object <mulgara:is><info:fedora/fedora-system:ServiceDefinition-3.0>
-  minus $object <mulgara:is><info:fedora/fedora-system:ServiceDeployment-3.0>
-  order by $object';
+    where (walk($model <fedora-model:hasModel><info:fedora/fedora-system:ContentModel-3.0>
+    and $model <fedora-model:hasModel> $object))
+    minus $object <mulgara:is><info:fedora/fedora-system:FedoraObject-3.0>
+    minus $object <mulgara:is><info:fedora/fedora-system:ContentModel-3.0>
+    minus $object <mulgara:is><info:fedora/fedora-system:ServiceDefinition-3.0>
+    minus $object <mulgara:is><info:fedora/fedora-system:ServiceDeployment-3.0>
+    order by $object';
 
   $results = $connection->repository->ri->itqlQuery($query);
 
