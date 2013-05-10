@@ -1,5 +1,5 @@
 <?php
-require_once 'includes/features.inc';
+
 function islandora_sync_menu() {
   $items['admin/structure/types/manage/%/fedora'] = array(
     'title' => 'Fedora Commons',
