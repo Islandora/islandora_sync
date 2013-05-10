@@ -56,7 +56,7 @@ function islandora_sync_bundle_settings_form($form, $form_state, $bundle) {
       'cron' => t('Cron'),
     ),
   );
-  if (isset($settings->sync_fedora_timing)) {
+  if ($settings->sync_fedora_timing) {
     $form['sync_fedora_group']['sync_fedora_timing']['#default_value'] = $settings->sync_fedora_timing;
   }
   $form['sync_fedora_group']['sync_fedora_create'] = array(
@@ -104,7 +104,7 @@ function islandora_sync_bundle_settings_form($form, $form_state, $bundle) {
       'cron' => t('Cron'),
     ),
   );
-  if (isset($settings->sync_drupal_timing)) {
+  if ($settings->sync_drupal_timing) {
     $form['sync_drupal_group']['sync_drupal_timing']['#default_value'] = $settings->sync_drupal_timing;
   }
   $form['sync_drupal_group']['sync_drupal_create'] = array(
@@ -152,10 +152,25 @@ function islandora_sync_bundle_settings_form($form, $form_state, $bundle) {
   return $form;
 }
 
-function islandora_sync_bundle_settings_form_validate($form, $form_state) {
+function islandora_sync_bundle_settings_form_validate($form, &$form_state) {
+  $values = $form_state['values'];
   module_load_include('inc', 'islandora', 'includes/utilities');
-  if (!empty($form_state['values']['namespace']) && !islandora_is_valid_namespace($form_state['values']['namespace'])) {
+  // Require valid namespace.
+  if (!empty($values['namespace']) && !islandora_is_valid_namespace($values['namespace'])) {
     form_set_error('namespace', t('Please enter a valid namespace'));
+  }
+
+  // Require a content model if syncing from Fedora
+  if ($values['sync_fedora'] && is_null($values['cmodel'])) {
+    form_set_error('cmodel', t('Content model is required.'));
+  }
+
+  // Require sync_timing if parent sync selected.
+  if ($values['sync_fedora'] && is_null($values['sync_fedora_timing'])) {
+    form_set_error('sync_fedora_timing', t('Sync Timing is required.'));
+  }
+  if ($values['sync_drupal'] && is_null($values['sync_drupal_timing'])) {
+    form_set_error('sync_drupal_timing', t('Sync Timing is required.'));
   }
 }
 
