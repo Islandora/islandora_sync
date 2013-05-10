@@ -214,5 +214,44 @@ function islandora_sync_schema() {
       ),
     ),
   );
+  $schema['islandora_sync_queue'] = array(
+    'description' => '',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'type' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'bundle' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'entity_id' => array(
+        'type' => 'varchar',
+        'length' => 128,
+      ),
+      'pid' => array(
+        'type' => 'varchar',
+        'length' => 128,
+      ),
+      'operation' => array(
+        'type' => 'varchar',
+        'length' => 20,
+      ),
+      'processed_time' => array(
+        'type' => 'int',
+        'size' => 'big',
+        'unsigned' => TRUE,
+      ),
+    ),
+    'primary key' => array('id'),
+  );
   return $schema;
 }
