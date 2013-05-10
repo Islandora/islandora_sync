@@ -150,7 +150,7 @@ function islandora_sync_module_implements_alter(&$implementations, $hook) {
 
 function islandora_sync_form_field_ui_field_overview_form_alter(&$form, &$form_state, $form_id) {
   $form['fields']['#header'][6]['colspan'] = 3;  //@TODO: don't hardcode
-  foreach ($form['fields'] AS $field_name => $values) {
+  foreach ($form['fields'] as $field_name => $values) {
     $row_types = array('field', 'extra_field', 'group');  //@TODO: must be a better way
     if (isset($values['#row_type']) && in_array($values['#row_type'], $row_types)) {
       $form['fields'][$field_name]['fedora'] = array(
@@ -171,10 +171,9 @@ function islandora_sync_features_api() {
     'field_datastreams' => array(
       'name' => t('Field to Fedora mappings'),
       'file' => drupal_get_path('module', 'islandora_sync') . '/includes/features.inc',
-      //'default_hook' => 'field_datastreams_default',
       'default_file' => FEATURES_DEFAULTS_INCLUDED_COMMON,
       'feature_source' => TRUE,
-    )
+    ),
   );
 }
 
@@ -235,6 +234,7 @@ function islandora_sync_build_ds_content($content, $node_field, $field_info) {
       }
       $content = islandora_sync_build_xml_datastream($content, $node_field, $field_info);
       break;
+
     case 'managed_datastream':
       break;
   }
@@ -256,7 +256,7 @@ function islandora_sync_init_xml_datastream($field_info) {
   }
 
   foreach ($namespaces as $namespace) {
-    $root->setAttribute('xmlns:'.$namespace->prefix, $namespace->uri);
+    $root->setAttribute('xmlns:' . $namespace->prefix, $namespace->uri);
   }
 
   $doc->appendChild($root);
@@ -354,7 +354,7 @@ function islandora_sync_get_parent_path($field, $parents = array()) {
   $parents = islandora_sync_get_parent_fields($field->field, $field->bundle, $parents);
 
   $parents = array_reverse($parents);
-  foreach ($parents AS $parent) {
+  foreach ($parents as $parent) {
     // @TODO: field could belong to multiple bundles, query with bundle
     $field_read_path = db_query("SELECT read_path FROM {islandora_sync_fields} WHERE field = :field",
       array(':field' => $parent)
@@ -400,7 +400,7 @@ function islandora_sync_get_parent_fields($field, $bundle, $parents) {
 
   $current_count = count($parents);
   if ($current_count > $start_count) {
-    $parents = islandora_sync_get_parent_fields($parents[$current_count -1], $bundle, $parents);
+    $parents = islandora_sync_get_parent_fields($parents[$current_count - 1], $bundle, $parents);
   }
 
   return $parents;
