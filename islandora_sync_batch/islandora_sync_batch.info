@@ -1,0 +1,4 @@
+name = Islandora Sync Batch
+description = Batch sync data between Drupal and Fedora Commons.
+core = 7.x
+dependencies[] = islandora_sync

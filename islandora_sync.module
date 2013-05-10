@@ -25,14 +25,14 @@ function islandora_sync_menu() {
     'type' => MENU_LOCAL_TASK,
     'file' => 'includes/field_settings.form.inc',
   );
-  $items['admin/islandora/fedora-export/xml-datastreams'] = array(
+  $items['admin/islandora/sync/xml-datastreams'] = array(
     'title' => 'XML Datastream Settings',
     'page callback' => 'islandora_sync_xml_ds_page',
     'access arguments' => array('islandora sync settings'),
     'type' => MENU_NORMAL_ITEM,
     'file' => 'includes/xml_ds_settings.form.inc',
   );
-  $items['admin/islandora/fedora-export/xml-datastreams/add'] = array(
+  $items['admin/islandora/sync/xml-datastreams/add'] = array(
     'title' => 'Add XML Datastream Settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('islandora_sync_xml_ds_add'),
@@ -40,7 +40,7 @@ function islandora_sync_menu() {
     'type' => MENU_LOCAL_ACTION,
     'file' => 'includes/xml_ds_settings.form.inc',
   );
-  $items['admin/islandora/fedora-export/xml-datastreams/%/edit'] = array(
+  $items['admin/islandora/sync/xml-datastreams/%/edit'] = array(
     'title' => 'Edit XML Datastream Settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('islandora_sync_xml_ds_edit', 4),
@@ -48,21 +48,13 @@ function islandora_sync_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'includes/xml_ds_settings.form.inc',
   );
-  $items['admin/islandora/fedora-export/xml-datastreams/%/delete'] = array(
+  $items['admin/islandora/sync/xml-datastreams/%/delete'] = array(
     'title' => 'Delete XML Datastream Settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('islandora_sync_xml_ds_delete', 4),
     'access arguments' => array('islandora sync settings'),
     'type' => MENU_CALLBACK,
     'file' => 'includes/xml_ds_settings.form.inc',
-  );
-  $items['admin/islandora/fedora-export/bulk-import'] = array(
-    'title' => 'Batch Import Fedora Objects',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('islandora_sync_batch_import_form'),
-    'access arguments' => array('islandora sync settings'),
-    'type' => MENU_NORMAL_ITEM,
-    'file' => 'includes/import.inc',
   );
   return $items;
 }

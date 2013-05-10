@@ -5,11 +5,11 @@ function islandora_sync_xml_ds_page() {
 
   $header = array(t('Datastream'), t('Edit'), t('Delete'));
   $rows = array();
-  foreach ($datastreams AS $datastream) {
+  foreach ($datastreams as $datastream) {
     $rows[] = array(
       check_plain($datastream->ds_id),
-      l(t('Edit'), "admin/islandora/fedora-export/xml-datastreams/$datastream->ds_id/edit"),
-      l(t('Delete'), "admin/islandora/fedora-export/xml-datastreams/$datastream->ds_id/delete"),
+      l(t('Edit'), "admin/islandora/sync/xml-datastreams/$datastream->ds_id/edit"),
+      l(t('Delete'), "admin/islandora/sync/xml-datastreams/$datastream->ds_id/delete"),
     );
   }
 
@@ -100,14 +100,14 @@ function islandora_sync_xml_ds_add_submit($form, &$form_state) {
   $record = array('ds_id' => $values['ds_id'], 'root' => $values['root'], 'namespace_uri' => $values['namespace_uri']);
   drupal_write_record('islandora_sync_xml_ds', $record);
 
-  foreach ($values['namespaces'] AS $namespace) {
+  foreach ($values['namespaces'] as $namespace) {
     if (is_array($namespace)) {
       $record = array('ds_id' => $values['ds_id'], 'prefix' => $namespace['prefix'], 'uri' => $namespace['uri']);
       drupal_write_record('islandora_sync_xml_ds_namespaces', $record);
     }
   }
   drupal_set_message(t('Datastream settings saved'));
-  $form_state['redirect'] = 'admin/islandora/fedora-export/xml-datastreams';
+  $form_state['redirect'] = 'admin/islandora/sync/xml-datastreams';
 }
 
 function islandora_sync_xml_ds_edit($form, $form_state, $ds_id) {
@@ -120,12 +120,12 @@ function islandora_sync_xml_ds_delete($form, $form_state, $ds_id) {
     '#type' => 'value',
     '#value' => $ds_id,
   );
-  return confirm_form($form, $confirm_text, 'admin/islandora/fedora-export/xml-datastreams');
+  return confirm_form($form, $confirm_text, 'admin/islandora/sync/xml-datastreams');
 }
 
 function islandora_sync_xml_ds_delete_submit($form, &$form_state) {
   db_query('DELETE FROM {islandora_sync_xml_ds} WHERE ds_id = :ds_id', array(':ds_id' => $form_state['values']['ds_id']));
   db_query('DELETE FROM {islandora_sync_xml_ds_namespaces} WHERE ds_id = :ds_id', array(':ds_id' => $form_state['values']['ds_id']));
   drupal_set_message(t('Datastream settings deleted'));
-  $form_state['redirect'] = 'admin/islandora/fedora-export/xml-datastreams';
+  $form_state['redirect'] = 'admin/islandora/sync/xml-datastreams';
 }
