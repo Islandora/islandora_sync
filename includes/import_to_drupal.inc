@@ -147,13 +147,6 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
   }
 }
 
-function islandora_sync_field_settings($type, $field) {
-  $settings = db_query("SELECT * FROM {islandora_sync_fields} WHERE bundle = :bundle AND field = :field",
-    array(':bundle' => $type, ':field' => $field)
-  )->fetchAll();
-  return $settings;
-}
-
 function islandora_sync_get_parent_path($field, $parents = array()) {
   $path = '';
   $parents = islandora_sync_get_parent_fields($field->field, $field->bundle, $parents);
