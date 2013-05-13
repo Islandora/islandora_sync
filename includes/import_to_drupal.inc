@@ -1,12 +1,18 @@
 <?php
 
-function islandora_sync_import_from_pid($pid, $type) {
+function islandora_sync_import_from_pid($pid, $type, $nid = FALSE) {
   $object = islandora_object_load($pid);
 
-  $node = new stdClass();
-  $node->type = $type;
-  $node->language = LANGUAGE_NONE;
-  node_object_prepare($node);
+  if (!$nid) {
+    $node = new stdClass();
+    $node->type = $type;
+    $node->language = LANGUAGE_NONE;
+    node_object_prepare($node);
+  }
+  else {
+    $node = node_load($nid);
+  }
+
   $node->title = $object->label;
 
   $author = user_load_by_name($object->owner);
@@ -20,9 +26,14 @@ function islandora_sync_import_from_pid($pid, $type) {
   islandora_sync_build_node_fields($node, $object);
   node_save($node);
 
-  /*
-  $object->relationships->add(ISLANDORA_RELS_EXT_URI, 'drupalEntity', $node->nid, TRUE);
-  */
+  if (!$nid) {
+    $map['pid'] = $object->id;
+    $map['type'] = 'node';
+    $map['bundle'] = $type;
+    $map['entity_id'] = $node->nid;
+    drupal_write_record('islandora_sync_map', $map);
+  }
+
   return $node->nid;
 }
 
@@ -38,10 +49,8 @@ function islandora_sync_build_node_fields(&$node, $object) {
     $values = get_field_values($field, $object);
 
     if ($field->field != 'title') {
+      $node->{$field->field} = array();
       foreach ($values as $value) {
-        if (!is_array($node->{$field->field})) {   //@TODO: prevent notice
-          $node->{$field->field} = array();
-        }
         islandora_sync_save_field($field, $node, $value);
       }
     }
@@ -75,6 +84,14 @@ function islandora_sync_build_node_fields(&$node, $object) {
     }
 
     if ($collection_count) {
+      // Remove existing field collections which are attached. Updating existing seems difficult.
+      $existing_collection_count = count($node->{$bundle}[$node->language]);
+      for ($i = 0; $i < $existing_collection_count; $i++) {
+        $id = $node->{$bundle}[$node->language][$i]['value'];
+        entity_delete('field_collection_item', $id);
+        unset($node->{$bundle}[$node->language][$i]);
+      }
+
       for ($i = 0; $i < $collection_count; $i++) {
         $field_collection_item = entity_create('field_collection_item', array('field_name' => $bundle));
         $field_collection_item->setHostEntity('node', $node);
