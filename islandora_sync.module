@@ -106,7 +106,7 @@ function islandora_sync_islandora_object_modified(FedoraObject $object) {
  * Implements hook_islandora_datatastream_modified().
  */
 function islandora_sync_islandora_datastream_modified(FedoraObject $object, FedoraDatastream $datastream) {
-  // @TODO: should send dsid to update, limit fields that are updated 
+  // @TODO: should send dsid to update, limit fields that are updated
   islandora_sync_update_from_fedora($object);
 }
 
@@ -118,10 +118,9 @@ function islandora_sync_update_from_fedora(FedoraObject $object) {
     AND ists.sync_drupal_update", array(':models' => $object->models)
   )->fetchObject();
 
+  $nid = db_query("SELECT entity_id FROM {islandora_sync_map} WHERE pid = :pid", array(':pid' => $object->id))->fetchField();
   if ($bundle_info->sync_drupal_timing == 'real_time') {
     module_load_include('inc', 'islandora_sync', 'includes/import_to_drupal');
-
-    $nid = db_query("SELECT entity_id FROM {islandora_sync_map} WHERE pid = :pid", array(':pid' => $object->id))->fetchField();
 
     //@TODO: should objects that haven't been synced at all be created?
     islandora_sync_import_from_pid($object->id, $bundle_info->bundle, $nid);
@@ -130,6 +129,7 @@ function islandora_sync_update_from_fedora(FedoraObject $object) {
     $queue['pid'] = $object->id;
     $queue['type'] = $bundle_info->entity_type;
     $queue['bundle'] = $bundle_info->bundle;
+    $queue['entity_id'] = $nid;
     $queue['operation'] = 'update_drupal';
     drupal_write_record('islandora_sync_queue', $queue);
   }
@@ -152,6 +152,10 @@ function islandora_sync_cron() {
         $node = node_load($item->entity_id);
         $type_info = islandora_sync_bundle_settings($item->bundle);
         islandora_sync_export_from_node($node, $type_info);
+        break;
+
+      case 'update_drupal':
+        islandora_sync_import_from_pid($item->pid, $item->bundle, $item->entity_id);
         break;
 
     }
