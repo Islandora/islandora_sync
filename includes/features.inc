@@ -51,7 +51,7 @@ function field_datastreams_features_enable_feature($module_name) {
 }
 
 function islandora_sync_bundle_settings_features_export($data, &$export, $module_name) {
-  foreach ($data AS $component) {
+  foreach ($data as $component) {
     $export['features']['islandora_sync_bundle_settings'][$component] = $component;
   }
   return array();
