@@ -70,16 +70,12 @@ function islandora_sync_schema() {
   $schema['islandora_sync_type_settings'] = array(
     'description' => '',
     'fields' => array(
-      'id' => array(
-        'type' => 'serial',
-        'not null' => TRUE,
-      ),
-      'entity_type' => array(
+      'bundle' => array(
         'type' => 'varchar',
         'length' => 128,
         'not null' => TRUE,
       ),
-      'bundle' => array(
+      'entity_type' => array(
         'type' => 'varchar',
         'length' => 128,
         'not null' => TRUE,
@@ -151,15 +147,15 @@ function islandora_sync_schema() {
         'default' => 0,
       ),
     ),
-    'primary key' => array('id'),
+    'primary key' => array('bundle'),
   );
   $schema['islandora_sync_type_cmodel'] = array(
     'description' => '',
     'fields' => array(
-      'id' => array(
-        'type' => 'int',
-        'size' => 'big',
-        'not null' => 'true',
+      'bundle' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
       ),
       'cmodel' => array(
         'type' => 'varchar',
