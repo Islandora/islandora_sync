@@ -2,7 +2,7 @@
 
 function islandora_sync_export_from_node($node, $type_info) {
   module_load_include('inc', 'islandora', 'includes/utilities');
-  $cmodels = islandora_sync_get_bundle_cmodels($type_info->id);
+  $cmodels = islandora_sync_get_bundle_cmodels($type_info->bundle);
   $namespace = $type_info->namespace ? $type_info->namespace : 'default';
   $object = islandora_prepare_new_object($namespace, $node->title, array(), $cmodels, array());
 

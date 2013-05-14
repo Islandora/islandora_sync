@@ -76,7 +76,7 @@ function islandora_sync_permission() {
 function islandora_sync_islandora_object_ingested(FedoraObject $object) {
   // How can/should multiple cmodels be handled?
   $bundle_info = db_query("SELECT * FROM {islandora_sync_type_settings} ists
-    INNER JOIN {islandora_sync_type_cmodel} istc ON istc.id = ists.id
+    INNER JOIN {islandora_sync_type_cmodel} istc ON istc.bundle = ists.bundle
     WHERE istc.cmodel IN (:models)
     AND ists.sync_drupal = 1
     AND ists.sync_drupal_create", array(':models' => $object->models)
@@ -112,7 +112,7 @@ function islandora_sync_islandora_datastream_modified(FedoraObject $object, Fedo
 
 function islandora_sync_update_from_fedora(FedoraObject $object) {
   $bundle_info = db_query("SELECT * FROM {islandora_sync_type_settings} ists
-    INNER JOIN {islandora_sync_type_cmodel} istc ON istc.id = ists.id
+    INNER JOIN {islandora_sync_type_cmodel} istc ON istc.bundle = ists.bundle
     WHERE istc.cmodel IN (:models)
     AND ists.sync_drupal = 1
     AND ists.sync_drupal_update", array(':models' => $object->models)
@@ -131,6 +131,7 @@ function islandora_sync_update_from_fedora(FedoraObject $object) {
     $queue['bundle'] = $bundle_info->bundle;
     $queue['entity_id'] = $nid;
     $queue['operation'] = 'update_drupal';
+    //@TODO: limit queue to 1 op/object
     drupal_write_record('islandora_sync_queue', $queue);
   }
 }
@@ -238,6 +239,12 @@ function islandora_sync_features_api() {
       'default_file' => FEATURES_DEFAULTS_INCLUDED_COMMON,
       'feature_source' => TRUE,
     ),
+    'islandora_sync_bundle_settings' => array(
+      'name' => t('Islandora Sync content type settings'),
+      'file' => drupal_get_path('module', 'islandora_sync') . 'includes/features.inc',
+      'default_file' => FEATURES_DEFAULTS_INCLUDED_COMMON,
+      'feature_source' => TRUE,
+    )
   );
 }
 
@@ -267,9 +274,9 @@ function islandora_sync_get_content_models() {
   return $content_models;
 }
 
-function islandora_sync_get_bundle_cmodels($bundle_settings_id) {
-  $cmodels = db_query("SELECT cmodel FROM {islandora_sync_type_cmodel} WHERE id = :id",
-    array(':id' => $bundle_settings_id)
+function islandora_sync_get_bundle_cmodels($bundle) {
+  $cmodels = db_query("SELECT cmodel FROM {islandora_sync_type_cmodel} WHERE bundle = :bundle",
+    array(':bundle' => $bundle)
   )->fetchCol();
   return $cmodels;
 }
