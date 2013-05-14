@@ -64,6 +64,18 @@ function islandora_sync_schema() {
         'size' => 'small',
         'not null' => TRUE,
       ),
+      'predicate' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'predicate_uri' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
     ),
     'primary key' => array('bundle', 'field'),
   );

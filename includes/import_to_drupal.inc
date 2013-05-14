@@ -47,9 +47,8 @@ function islandora_sync_build_node_fields(&$node, $object) {
 
   foreach ($fields_to_populate as $field) {
     $values = get_field_values($field, $object);
-
+    $node->{$field->field} = array();
     if ($field->field != 'title') {
-      $node->{$field->field} = array();
       foreach ($values as $value) {
         islandora_sync_save_field($field, $node, $value);
       }
@@ -110,39 +109,47 @@ function islandora_sync_build_node_fields(&$node, $object) {
 function get_field_values($field, $object, $parents = array()) {
   $values = array();
 
-  if ($field->export_type == 'xml_value') {
-    $read_path = '/mods:mods';   //@TODO: create root element
-    $field_path = db_query("SELECT read_path FROM {islandora_sync_fields} WHERE field = :field AND bundle = :bundle",
-      array(':field' => $field->field, ':bundle' => $field->bundle)
-    )->fetchField();
-    if ($field->read_context == 'parent') {
-      $parent_path = islandora_sync_get_parent_path($field, $parents);
-      $read_path .= $parent_path;
-      if ($field_path) {
-        $read_path .= '/' . $field_path; //@TODO: should text() be here?
+  switch ($field->export_type) {
+    case 'xml_value':
+      $read_path = '/mods:mods';   //@TODO: create root element, default to // if we can't get it
+      $field_path = db_query("SELECT read_path FROM {islandora_sync_fields} WHERE field = :field AND bundle = :bundle",
+        array(':field' => $field->field, ':bundle' => $field->bundle)
+      )->fetchField();
+      if ($field->read_context == 'parent') {
+        $parent_path = islandora_sync_get_parent_path($field, $parents);
+        $read_path .= $parent_path;
+        if ($field_path) {
+          $read_path .= '/' . $field_path; //@TODO: should text() be here?
+        }
       }
-    }
-    else {
-      $read_path = $field_path;
-    }
-
-    $ds_content = $object[$field->dsid]->content;
-    $doc = new DOMDocument();
-    $doc->loadXML($ds_content);
-    if ($doc) {
-      $xpath = new DOMXPath($doc);
-      $xml_values = $xpath->query($read_path);
-      foreach ($xml_values as $xml_value) {
-        $values[] = $xml_value->nodeValue;
+      else {
+        $read_path = $field_path;
       }
-    }
 
-  }
-  else {
-    // managed datastream
-    $values[] = array('content' => $object[$field->dsid]->content, 'mimetype' => $object[$field->dsid]->mimetype);  //@TODO: stream to get around memory constraints?
+      $ds_content = $object[$field->dsid]->content;
+      $doc = new DOMDocument();
+      $doc->loadXML($ds_content);
+      if ($doc) {
+        $xpath = new DOMXPath($doc);
+        $xml_values = $xpath->query($read_path);
+        foreach ($xml_values as $xml_value) {
+          $values[] = $xml_value->nodeValue;
+        }
+      }
+      break;
 
+    case 'managed_datastream':
+      $values[] = array('content' => $object[$field->dsid]->content, 'mimetype' => $object[$field->dsid]->mimetype);  //@TODO: stream to get around memory constraints?
+      break;
+
+    case 'relationship':
+      $rels = $object->relationships->get($field->predicate_uri, $field->predicate);
+      foreach ($rels as $rel) {
+        $values[] = $rel['object']['value'];
+      }
+      break;
   }
+
   return $values;
 }
 
@@ -150,6 +157,7 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
   $lang = isset($entity->language) ? $entity->language : LANGUAGE_NONE;
   $id = isset($entity->nid) ? $entity->nid : user_password();
   $prepared_field = &$entity->{$field_info->field}[$lang];
+  //@TODO: these should be plugins
   switch ($field_info->type) {
     case 'image':
       module_load_include('inc', 'islandora', 'mime_detect');
@@ -159,6 +167,21 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
       $file = file_save_data($value['content'], 'public://' . $file_name, FILE_EXISTS_RENAME);
       $prepared_field[] = (array) $file;
       break;
+
+    case 'relation_select':
+      $rel_id = db_query("SELECT * FROM {islandora_sync_map} WHERE pid = :pid", array(':pid' => $value))->fetchObject();
+      if ($rel_id) {
+        $endpoints = array(
+          array('entity_type' => 'node', 'entity_id' => $rel_id),
+          array('entity_type' => 'node', 'entity_id' => $id),
+        );
+        $field_data = unserialize($field_info->data);
+        $rel_type = $field_data['settings']['relationship_type'];
+        relation_create($rel_type, $endpoints);
+      }
+
+      break;
+
     default:
       $prepared_field[]['value'] = $value;
   }

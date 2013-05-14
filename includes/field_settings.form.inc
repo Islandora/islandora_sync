@@ -51,6 +51,7 @@ function islandora_sync_field_settings_form($form, $form_state, $type, $field) {
     '#options' => array(
       'xml_value' => t('XML value'),
       'managed_datastream' => t('Managed datastream'),
+      'relationship' => t('Relationship'),
     ),
     '#empty_option' => t('- Select -'),
   );
@@ -60,6 +61,14 @@ function islandora_sync_field_settings_form($form, $form_state, $type, $field) {
   $form['general']['dsid'] = array(
     '#type' => 'textfield',
     '#title' => t('Datastream ID'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="export_type"]' => array(
+          array('value' => 'xml_value'),
+          array('value' => 'managed_datastream'),
+        ),
+      ),
+    ),
   );
   if (isset($settings->dsid)) {
     $form['general']['dsid']['#default_value'] = $settings->dsid;
@@ -70,7 +79,7 @@ function islandora_sync_field_settings_form($form, $form_state, $type, $field) {
     '#collapsible' => FALSE,
     '#states' => array(
       'visible' => array(
-        ':input[name="export_type"]' =>  array('value' => 'xml_value'),
+        ':input[name="export_type"]' => array('value' => 'xml_value'),
       ),
     ),
   );
@@ -168,6 +177,30 @@ function islandora_sync_field_settings_form($form, $form_state, $type, $field) {
   if (isset($settings->read_path)) {
     $form['xml']['read_group']['read_path']['#default_value'] = $settings->read_path;
   }
+  $form['relationship'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Relationship Settings'),
+    '#collapsible' => FALSE,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="export_type"]' =>  array('value' => 'relationship'),
+      ),
+    ),
+  );
+  $form['relationship']['predicate'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Relationship Predicate'),
+  );
+  if (isset($settings->predicate)) {
+    $form['relationship']['predicate']['#default_value'] = $settings->predicate;
+  }
+  $form['relationship']['predicate_uri'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Predicate URI'),
+  );
+  if (isset($settings->predicate_uri)) {
+    $form['relationship']['predicate_uri']['#default_value'] = $settings->predicate_uri;
+  }
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit'),
@@ -177,7 +210,7 @@ function islandora_sync_field_settings_form($form, $form_state, $type, $field) {
 
 //@TODO: validate that DS has been setup
 function islandora_sync_field_settings_form_validate($form, &$form_state) {
-  
+
 }
 
 //@TODO: clear fieldset values when parent checkbox is not checked, to avoid values getting stored
