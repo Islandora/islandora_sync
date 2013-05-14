@@ -27,8 +27,8 @@ function islandora_sync_field_settings_form($form, $form_state, $type, $field) {
   );
   $form['export'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Export to Fedora Commons?'),
-    '#description' => t('Should this field be exported to Fedora Commons?'),
+    '#title' => t('Sync with Fedora Commons?'),
+    '#description' => t('Should this field be synced with Fedora Commons?'),
   );
   if (isset($settings->export)) {
     $form['export']['#default_value'] = $settings->export;
@@ -175,9 +175,12 @@ function islandora_sync_field_settings_form($form, $form_state, $type, $field) {
   return $form;
 }
 
-//@TODO: clear fieldset values when parent checkbox is not checked, to avoid values getting stored
 //@TODO: validate that DS has been setup
+function islandora_sync_field_settings_form_validate($form, &$form_state) {
+  
+}
 
+//@TODO: clear fieldset values when parent checkbox is not checked, to avoid values getting stored
 function islandora_sync_field_settings_form_submit($form, $form_state) {
   $values = $form_state['values'];
 
