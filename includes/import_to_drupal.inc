@@ -11,6 +11,8 @@ function islandora_sync_import_from_pid($pid, $type, $nid = FALSE) {
   }
   else {
     $node = node_load($nid);
+    $node->revision = 1; // Is this good, many revisions seem to be created
+    $node->log = 'Updated by islandora_sync';
   }
 
   $node->title = $object->label;
@@ -48,6 +50,7 @@ function islandora_sync_build_node_fields(&$node, $object) {
 
   foreach ($fields_to_populate as $field) {
     $values = get_field_values($field, $object);
+    //field_purge_data()
     $node->{$field->field} = array();
     // clear other instances of the field (ex. referenced entities)
     if ($field->field != 'title') {
