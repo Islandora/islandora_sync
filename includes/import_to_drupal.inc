@@ -22,7 +22,8 @@ function islandora_sync_import_from_pid($pid, $type, $nid = FALSE) {
   else {
     $node->uid = 1;
   }
-  node_save($node); // Call before adding fields to get nid, does this add noise to revisions?
+  // Call node_save to get a nid
+  node_save($node);
   islandora_sync_build_node_fields($node, $object);
   node_save($node);
 
@@ -48,6 +49,7 @@ function islandora_sync_build_node_fields(&$node, $object) {
   foreach ($fields_to_populate as $field) {
     $values = get_field_values($field, $object);
     $node->{$field->field} = array();
+    // clear other instances of the field (ex. referenced entities)
     if ($field->field != 'title') {
       foreach ($values as $value) {
         islandora_sync_save_field($field, $node, $value);
@@ -172,12 +174,20 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
       $rel_id = db_query("SELECT * FROM {islandora_sync_map} WHERE pid = :pid", array(':pid' => $value))->fetchObject();
       if ($rel_id) {
         $endpoints = array(
-          array('entity_type' => 'node', 'entity_id' => $rel_id),
+          array('entity_type' => 'node', 'entity_id' => $rel_id->entity_id),
           array('entity_type' => 'node', 'entity_id' => $id),
         );
-        $field_data = unserialize($field_info->data);
-        $rel_type = $field_data['settings']['relationship_type'];
-        relation_create($rel_type, $endpoints);
+        $field_data = db_query("SELECT data FROM {field_config_instance} WHERE field_name = :field_name AND bundle = :bundle",
+          array(':field_name' => $field_info->field, ':bundle' => $field_info->bundle)
+        )->fetchObject();
+        $field_data = unserialize($field_data->data);
+        $rel_type = $field_data['settings']['relation_type'];
+        // Check if exists
+        if (relation_relation_exists($endpoints, $rel_type)) {
+          return;
+        }
+        $relation = relation_create($rel_type, $endpoints);
+        relation_save($relation);
       }
 
       break;
