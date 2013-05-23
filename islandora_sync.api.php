@@ -6,6 +6,8 @@
  */
 
 /**
+ * Enables modules to prepare/build and save node fields.
+ *
  * @param $node
  *   The Node object to be saved.
  * @param $object

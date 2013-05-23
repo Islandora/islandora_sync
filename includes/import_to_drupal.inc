@@ -131,28 +131,6 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
       $prepared_field[] = (array) $file;
       break;
 
-    case 'relation_select':
-      $rel_id = db_query("SELECT * FROM {islandora_sync_map} WHERE pid = :pid", array(':pid' => $value))->fetchObject();
-      if ($rel_id) {
-        $endpoints = array(
-          array('entity_type' => 'node', 'entity_id' => $rel_id->entity_id),
-          array('entity_type' => 'node', 'entity_id' => $id),
-        );
-        $field_data = db_query("SELECT data FROM {field_config_instance} WHERE field_name = :field_name AND bundle = :bundle",
-          array(':field_name' => $field_info->field, ':bundle' => $field_info->bundle)
-        )->fetchObject();
-        $field_data = unserialize($field_data->data);
-        $rel_type = $field_data['settings']['relation_type'];
-        // Check if exists
-        if (relation_relation_exists($endpoints, $rel_type)) {
-          return;
-        }
-        $relation = relation_create($rel_type, $endpoints);
-        relation_save($relation);
-      }
-
-      break;
-
     default:
       $prepared_field[]['value'] = $value;
   }
