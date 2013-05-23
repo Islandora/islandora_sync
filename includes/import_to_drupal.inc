@@ -43,69 +43,27 @@ function islandora_sync_import_from_pid($pid, $type, $nid = FALSE) {
 function islandora_sync_build_node_fields(&$node, $object) {
   $fields_to_populate = db_query("SELECT fcef.*, fc.type FROM {islandora_sync_fields} fcef
     LEFT JOIN {field_config} fc ON fc.field_name = fcef.field
-    WHERE fcef.bundle = :bundle
-    AND fc.type != 'field_collection'",
+    WHERE fcef.bundle = :bundle",
     array(':bundle' => $node->type)
   )->fetchAll();
 
   foreach ($fields_to_populate as $field) {
-    $values = get_field_values($field, $object);
-    //field_purge_data()
-    $node->{$field->field} = array();
-    // clear other instances of the field (ex. referenced entities)
-    if ($field->field != 'title') {
-      foreach ($values as $value) {
-        islandora_sync_save_field($field, $node, $value);
-      }
-    }
-    else {
-      if ($values[0]) {
-        $node->title = $values[0];
-      }
 
-    }
+    //@TODO: normalize $field->type?
+    $return = module_invoke_all('islandora_sync_node_field_build', $node, $object, $field);
 
-  }
-
-  // @TODO: merge with query above and provide function with options to build query
-  $field_collection_fields = db_query("SELECT * FROM {islandora_sync_fields} fcef
-    LEFT JOIN {field_config_instance} fci ON fci.field_name = fcef.field
-    LEFT JOIN {field_config} fc ON fc.field_name = fci.bundle
-    WHERE fc.type = 'field_collection'"
-  )->fetchAllAssoc('field');
-
-  $values = array();
-  foreach ($field_collection_fields as $field_collection_field) {
-    $values[$field_collection_field->bundle][$field_collection_field->field] = get_field_values($field_collection_field, $object, array($field_collection_field->bundle));
-  }
-
-  foreach ($values as $bundle => $fields) {
-    $collection_count = 0;
-    foreach ($fields as $value) {
-      if (count($value) > $collection_count) {
-        $collection_count = count($value);
-      }
-    }
-
-    if ($collection_count) {
-      // Remove existing field collections which are attached. Updating existing seems difficult.
-      $existing_collection_count = count($node->{$bundle}[$node->language]);
-      for ($i = 0; $i < $existing_collection_count; $i++) {
-        $id = $node->{$bundle}[$node->language][$i]['value'];
-        entity_delete('field_collection_item', $id);
-        unset($node->{$bundle}[$node->language][$i]);
-      }
-
-      for ($i = 0; $i < $collection_count; $i++) {
-        $field_collection_item = entity_create('field_collection_item', array('field_name' => $bundle));
-        $field_collection_item->setHostEntity('node', $node);
-
-        foreach ($fields as $k => $v) {
-          if ($v[$i]) {
-            islandora_sync_save_field($field_collection_fields[$k], $field_collection_item, $v[$i]);
-          }
+    if (!$return) {
+      $values = get_field_values($field, $object);
+      $node->{$field->field} = array();
+      if ($field->field != 'title') {
+        foreach ($values as $value) {
+          islandora_sync_save_field($field, $node, $value);
         }
-        $field_collection_item->save();
+      }
+      else {
+        if ($values[0]) {
+          $node->title = $values[0];
+        }
       }
     }
   }

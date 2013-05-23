@@ -198,6 +198,7 @@ function islandora_sync_node_update($node) {
 
 /**
  * Implements hook_module_implements_alter().
+ * This is used to attempt to have islandora_sync form_alter implementations after other modules such as field_group.
  */
 function islandora_sync_module_implements_alter(&$implementations, $hook) {
   if (($hook == 'form_field_ui_field_overview_form_alter' || $hook == 'form_alter') && isset($implementations['islandora_sync'])) {
