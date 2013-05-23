@@ -74,7 +74,19 @@ function get_field_values($field, $object, $parents = array()) {
 
   switch ($field->export_type) {
     case 'xml_value':
-      $read_path = '/mods:mods';   //@TODO: create root element, default to // if we can't get it
+      $root = db_query("SELECT isxdn.prefix, isxd.root FROM {islandora_sync_xml_ds_namespaces} isxdn
+        LEFT JOIN {islandora_sync_xml_ds} isxd ON isxd.namespace_uri = isxdn.uri
+        WHERE isxd.ds_id = :ds_id",
+        array(':ds_id' => $field->dsid)
+      )->fetchObject();
+
+      if (isset($root->prefix) && isset($root->root)) {
+        $read_path = '/' . $root->prefix . ':' . $root->root;
+      }
+      else {
+        $read_path = '//';
+      }
+
       $field_path = db_query("SELECT read_path FROM {islandora_sync_fields} WHERE field = :field AND bundle = :bundle",
         array(':field' => $field->field, ':bundle' => $field->bundle)
       )->fetchField();
@@ -82,7 +94,7 @@ function get_field_values($field, $object, $parents = array()) {
         $parent_path = islandora_sync_get_parent_path($field, $parents);
         $read_path .= $parent_path;
         if ($field_path) {
-          $read_path .= '/' . $field_path; //@TODO: should text() be here?
+          $read_path .= '/' . $field_path;
         }
       }
       else {
@@ -120,7 +132,6 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
   $lang = isset($entity->language) ? $entity->language : LANGUAGE_NONE;
   $id = isset($entity->nid) ? $entity->nid : user_password();
   $prepared_field = &$entity->{$field_info->field}[$lang];
-  //@TODO: these should be plugins
   switch ($field_info->type) {
     case 'image':
       module_load_include('inc', 'islandora', 'mime_detect');
