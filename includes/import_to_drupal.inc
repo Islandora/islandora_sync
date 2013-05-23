@@ -154,12 +154,17 @@ function islandora_sync_get_parent_path($field, $parents = array()) {
   $parents = array_reverse($parents);
   foreach ($parents as $parent) {
     // @TODO: field could belong to multiple bundles, query with bundle
-    $field_read_path = db_query("SELECT read_path FROM {islandora_sync_fields} WHERE field = :field",
+    $field_read = db_query("SELECT read_path, read_context FROM {islandora_sync_fields} WHERE field = :field",
       array(':field' => $parent)
-    )->fetchField();
-    // @TODO: if document read context, get it and end
-    if ($field_read_path && $field_read_path != $path) {
-      $path .= '/' . $field_read_path;
+    )->fetchObject();
+    if ($field_read && $field_read->read_path != $path) {
+      if ($field_read->read_context == 'parent') {
+        $path .= '/' . $field_read->read_path;
+      }
+      elseif ($field_read->read_context == 'document') {
+        $path .= '/' . $field_read->read_path;
+        return $path;
+      }
     }
   }
 

@@ -173,6 +173,7 @@ function islandora_sync_field_settings_form($form, $form_state, $type, $field) {
   $form['xml']['read_group']['read_path'] = array(
     '#type' => 'textfield',
     '#title' => t('Read'),
+    '#description' => t("If Document context, don't include the root element."),
   );
   if (isset($settings->read_path)) {
     $form['xml']['read_group']['read_path']['#default_value'] = $settings->read_path;
