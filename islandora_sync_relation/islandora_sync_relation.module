@@ -6,12 +6,14 @@
 function islandora_sync_relation_islandora_sync_node_field_build($node, $object, $field) {
   if ($field->type == 'relation_select') {
     // Remove existing
-    $existing = array();
-    foreach ($node->{$field->field}{$node->language} as $existing_rid) {
-      $existing[] = $existing_rid['relation_id'];
-    }
-    if (!empty($existing)) {
-      relation_delete_multiple($existing);
+    if (!empty($node->{$field->field}{$node->language})) {
+      $existing = array();
+      foreach ($node->{$field->field}{$node->language} as $existing_rid) {
+        $existing[] = $existing_rid['relation_id'];
+      }
+      if (!empty($existing)) {
+        relation_delete_multiple($existing);
+      }
     }
 
     $values = get_field_values($field, $object);
