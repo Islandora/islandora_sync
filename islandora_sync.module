@@ -136,6 +136,42 @@ function islandora_sync_update_from_fedora(FedoraObject $object) {
   }
 }
 
+function islandora_sync_islandora_datastream_purged(FedoraObject $object, $dsid) {
+  // Is object synced?
+  $nid = db_query("SELECT entity_id FROM {islandora_sync_map} WHERE pid = :pid", array(':pid' => $object->id))->fetchField();
+
+  if ($nid) {
+    $node = node_load($nid);
+    // bundle could be different if in field collection? is that even possible?
+    $field_info = db_query("SELECT * FROM {islandora_sync_fields}
+      WHERE dsid = :dsid
+      AND bundle = :bundle
+      LIMIT 1",
+      array(':dsid' => $dsid, ':bundle' => $node->type)
+    )->fetchObject();
+
+    if ($field_info) {
+      if ($field_info->export_type == 'managed_datastream') {
+        $bundle_info = db_query("SELECT * FROM {islandora_sync_type_settings} WHERE bundle = :bundle",
+          array(':bundle' => $node->type)
+        )->fetchObject();
+        if ($bundle_info->sync_fedora_update) {
+          // delete the field
+        }
+        else {
+          // queue for deletion
+        }
+      }
+      else {
+        // Handle like a normal update.
+        islandora_sync_update_from_fedora($object);
+      }
+    }
+  }
+
+  // Is dsid synced as managed_datastream?
+}
+
 /**
  * Implements hook_cron().
  */

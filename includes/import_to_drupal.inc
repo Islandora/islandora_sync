@@ -48,8 +48,6 @@ function islandora_sync_build_node_fields(&$node, $object) {
   )->fetchAll();
 
   foreach ($fields_to_populate as $field) {
-
-    //@TODO: normalize $field->type?
     $return = module_invoke_all('islandora_sync_node_field_build', $node, $object, $field);
 
     if (!$return) {
