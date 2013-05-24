@@ -9,7 +9,9 @@ function islandora_sync_relation_islandora_sync_node_field_build($node, $object,
     if (!empty($node->{$field->field}{$node->language})) {
       $existing = array();
       foreach ($node->{$field->field}{$node->language} as $existing_rid) {
-        $existing[] = $existing_rid['relation_id'];
+        if (isset($existing_rid['relation_id'])) {
+          $existing[] = $existing_rid['relation_id'];
+        }
       }
       if (!empty($existing)) {
         relation_delete_multiple($existing);

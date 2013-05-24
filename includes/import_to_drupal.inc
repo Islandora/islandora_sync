@@ -99,16 +99,25 @@ function get_field_values($field, $object, $parents = array()) {
         $read_path = $field_path;
       }
 
-      $ds_content = $object[$field->dsid]->content;
-      $doc = new DOMDocument();
-      $doc->loadXML($ds_content);
-      if ($doc) {
-        $xpath = new DOMXPath($doc);
-        $xml_values = $xpath->query($read_path);
-        foreach ($xml_values as $xml_value) {
-          $values[] = $xml_value->nodeValue;
+      try {
+        $ds_content = $object[$field->dsid]->content;
+      }
+      catch (Exception $e) {
+
+      }
+
+      if ($ds_content) {
+        $doc = new DOMDocument();
+        $doc->loadXML($ds_content);
+        if ($doc) {
+          $xpath = new DOMXPath($doc);
+          $xml_values = $xpath->query($read_path);
+          foreach ($xml_values as $xml_value) {
+            $values[] = $xml_value->nodeValue;
+          }
         }
       }
+
       break;
 
     case 'managed_datastream':

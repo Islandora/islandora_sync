@@ -26,7 +26,11 @@ function islandora_sync_field_collection_islandora_sync_node_field_build($node, 
       }
     }
     if ($collection_count) {
-      $existing_collection_count = count($node->{$field->field}[$node->language]);
+      $existing_collection_count = 0;
+      if (isset($node->{$field->field}[$node->language])) {
+        $existing_collection_count = count($node->{$field->field}[$node->language]);
+      }
+
       for ($i = 0; $i < $existing_collection_count; $i++) {
         $id = $node->{$field->field}[$node->language][$i]['value'];
         //@TODO: batch for delete multiple

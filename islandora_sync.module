@@ -143,33 +143,62 @@ function islandora_sync_islandora_datastream_purged(FedoraObject $object, $dsid)
   if ($nid) {
     $node = node_load($nid);
     // bundle could be different if in field collection? is that even possible?
-    $field_info = db_query("SELECT * FROM {islandora_sync_fields}
-      WHERE dsid = :dsid
-      AND bundle = :bundle
-      LIMIT 1",
-      array(':dsid' => $dsid, ':bundle' => $node->type)
+
+    $bundle_info = db_query("SELECT * FROM {islandora_sync_type_settings} WHERE bundle = :bundle",
+      array(':bundle' => $node->type)
     )->fetchObject();
 
-    if ($field_info) {
-      if ($field_info->export_type == 'managed_datastream') {
-        $bundle_info = db_query("SELECT * FROM {islandora_sync_type_settings} WHERE bundle = :bundle",
-          array(':bundle' => $node->type)
-        )->fetchObject();
-        if ($bundle_info->sync_fedora_update) {
-          // delete the field
+    if ($bundle_info->sync_drupal_update) {
+      $field_info = db_query("SELECT * FROM {islandora_sync_fields}
+        WHERE dsid = :dsid
+        AND bundle = :bundle
+        LIMIT 1",
+        array(':dsid' => $dsid, ':bundle' => $node->type)
+      )->fetchObject();
+
+      if ($field_info) {
+        if ($field_info->export_type == 'managed_datastream') {
+          if ($bundle_info->sync_drupal_timing == 'real_time') {
+            // Real time
+            islandora_sync_delete_field_by_dsid($node, $dsid, $field_info);
+          }
+          else {
+            // Queue
+            $queue['pid'] = $object->id;
+            $queue['type'] = $bundle_info->entity_type;
+            $queue['bundle'] = $node->type;
+            $queue['entity_id'] = $node->nid;
+            $queue['operation'] = 'delete_datastream_field';
+            $queue['data'] = array('dsid' => $dsid);
+            drupal_write_record('islandora_sync_queue', $queue);
+          }
         }
         else {
-          // queue for deletion
+          // Handle like a normal update.
+          islandora_sync_update_from_fedora($object);
         }
-      }
-      else {
-        // Handle like a normal update.
-        islandora_sync_update_from_fedora($object);
       }
     }
   }
+}
 
-  // Is dsid synced as managed_datastream?
+function islandora_sync_delete_field_by_dsid($node, $dsid, $field_info = NULL) {
+  if (is_null($field_info)) {
+    $field_info = db_query("SELECT * FROM {islandora_sync_fields}
+        WHERE dsid = :dsid
+        AND bundle = :bundle
+        LIMIT 1",
+      array(':dsid' => $dsid, ':bundle' => $node->type)
+    )->fetchObject();
+  }
+
+  $fid = isset($node->{$field_info->field}{$node->language}[0]['fid']) ? $node->{$field_info->field}{$node->language}[0]['fid'] : FALSE;
+  if ($fid) {
+    $file = file_load($fid);
+    file_delete($file);
+  }
+  $node->{$field_info->field} = array();
+  node_save($node);
 }
 
 /**
@@ -194,6 +223,12 @@ function islandora_sync_cron() {
       case 'update_drupal':
         islandora_sync_import_from_pid($item->pid, $item->bundle, $item->entity_id);
         break;
+
+      case 'delete_datastream_field':
+        $node = node_load($item->entity_id);
+        $data = unserialize($item->data);
+        $dsid = $data['dsid'];
+        islandora_sync_delete_field_by_dsid($node, $dsid);
 
     }
 
