@@ -4,7 +4,6 @@
  * Implements islandora_sync_node_field_build().
  */
 function islandora_sync_field_collection_islandora_sync_node_field_build($node, $object, $field) {
-
   if ($field->type == 'field_collection') {
     $child_fields = db_query("SELECT * FROM {islandora_sync_fields} fcef
       LEFT JOIN {field_config_instance} fci ON fci.field_name = fcef.field
@@ -25,19 +24,20 @@ function islandora_sync_field_collection_islandora_sync_node_field_build($node, 
         $collection_count = count($child_values);
       }
     }
+
+    $existing_collection_count = 0;
+    if (isset($node->{$field->field}[$node->language])) {
+      $existing_collection_count = count($node->{$field->field}[$node->language]);
+    }
+
+    for ($i = 0; $i < $existing_collection_count; $i++) {
+      $id = $node->{$field->field}[$node->language][$i]['value'];
+      //@TODO: batch for delete multiple
+      entity_delete('field_collection_item', $id);
+    }
+    $node->{$field->field} = array();
+
     if ($collection_count) {
-      $existing_collection_count = 0;
-      if (isset($node->{$field->field}[$node->language])) {
-        $existing_collection_count = count($node->{$field->field}[$node->language]);
-      }
-
-      for ($i = 0; $i < $existing_collection_count; $i++) {
-        $id = $node->{$field->field}[$node->language][$i]['value'];
-        //@TODO: batch for delete multiple
-        entity_delete('field_collection_item', $id);
-        unset($node->{$field->field}[$node->language][$i]);
-      }
-
       for ($i = 0; $i < $collection_count; $i++) {
         $field_collection_item = entity_create('field_collection_item', array('field_name' => $field->field));
         $field_collection_item->setHostEntity('node', $node);

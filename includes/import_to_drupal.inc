@@ -52,14 +52,16 @@ function islandora_sync_build_node_fields(&$node, $object) {
 
     if (!$return) {
       $values = get_field_values($field, $object);
+      $existing_title = $node->title;
       $node->{$field->field} = array();
+      $node->title = $existing_title; // Want to make sure we keep a title?
       if ($field->field != 'title') {
         foreach ($values as $value) {
           islandora_sync_save_field($field, $node, $value);
         }
       }
       else {
-        if ($values[0]) {
+        if (isset($values[0])) {
           $node->title = $values[0];
         }
       }
@@ -99,6 +101,7 @@ function get_field_values($field, $object, $parents = array()) {
         $read_path = $field_path;
       }
 
+      $ds_content = FALSE;
       try {
         $ds_content = $object[$field->dsid]->content;
       }
