@@ -103,7 +103,10 @@ function get_field_values($field, $object, $parents = array()) {
 
       $ds_content = FALSE;
       try {
-        $ds_content = $object[$field->dsid]->content;
+        if (is_object($object[$field->dsid])) {
+          $ds_content = $object[$field->dsid]->content;
+        }
+
       }
       catch (Exception $e) {
 
@@ -124,7 +127,14 @@ function get_field_values($field, $object, $parents = array()) {
       break;
 
     case 'managed_datastream':
-      $values[] = array('content' => $object[$field->dsid]->content, 'mimetype' => $object[$field->dsid]->mimetype);  //@TODO: stream to get around memory constraints?
+      try {
+        if (is_object($object[$field->dsid])) {
+          $values[] = array('content' => $object[$field->dsid]->content, 'mimetype' => $object[$field->dsid]->mimetype);  //@TODO: stream to get around memory constraints?
+        }
+      }
+      catch (Exception $e) {
+
+      }
       break;
 
     case 'relationship':

@@ -136,6 +136,9 @@ function islandora_sync_update_from_fedora(FedoraObject $object) {
   }
 }
 
+/**
+ * Implements hook_islandora_datastream_purged().
+ */
 function islandora_sync_islandora_datastream_purged(FedoraObject $object, $dsid) {
   // Is object synced?
   $nid = db_query("SELECT entity_id FROM {islandora_sync_map} WHERE pid = :pid", array(':pid' => $object->id))->fetchField();
@@ -177,6 +180,33 @@ function islandora_sync_islandora_datastream_purged(FedoraObject $object, $dsid)
           // Handle like a normal update.
           islandora_sync_update_from_fedora($object);
         }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_islandora_object_purged().
+ */
+function islandora_sync_islandora_object_purged($pid) {
+  $nid = db_query("SELECT entity_id FROM {islandora_sync_map} WHERE pid = :pid", array(':pid' => $pid))->fetchField();
+  if ($nid) {
+    $node = node_load($nid);
+    $bundle_info = db_query("SELECT * FROM {islandora_sync_type_settings} WHERE bundle = :bundle",
+      array(':bundle' => $node->type)
+    )->fetchObject();
+    if ($bundle_info->sync_drupal_delete) {
+      if ($bundle_info->sync_drupal_timing == 'real_time') {
+        entity_delete($bundle_info->entity_type, $nid);
+        db_delete('islandora_sync_map')->condition('pid', $pid)->execute();
+      }
+      else {
+        $queue['pid'] = $pid;
+        $queue['type'] = $bundle_info->entity_type;
+        $queue['bundle'] = $node->type;
+        $queue['entity_id'] = $node->nid;
+        $queue['operation'] = 'delete_drupal';
+        drupal_write_record('islandora_sync_queue', $queue);
       }
     }
   }
@@ -227,8 +257,13 @@ function islandora_sync_cron() {
       case 'delete_datastream_field':
         $node = node_load($item->entity_id);
         $data = unserialize($item->data);
-        $dsid = $data['dsid'];
-        islandora_sync_delete_field_by_dsid($node, $dsid);
+        islandora_sync_delete_field_by_dsid($node, $data['dsid']);
+        break;
+
+      case 'delete_drupal':
+        entity_delete($item->type, $item->entity_id);
+        db_delete('islandora_sync_map')->condition('pid', $item->pid)->execute();
+        break;
 
     }
 
