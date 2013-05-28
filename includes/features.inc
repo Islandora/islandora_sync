@@ -94,7 +94,7 @@ function islandora_sync_bundle_settings_features_rebuild($module_name) {
   if (!empty($bundles)) {
     foreach ($bundles as $bundle) {
       foreach ($bundle['cmodels'] as $cmodel) {
-        $bundle_cmodel = array('bundle' => $bundle, 'cmodel' => $cmodel);
+        $bundle_cmodel = array('bundle' => $bundle['bundle'], 'cmodel' => $cmodel['cmodel']);
         drupal_write_record('islandora_sync_type_cmodel', $bundle_cmodel);
       }
       unset($bundle['cmodels']);
