@@ -37,17 +37,24 @@ function field_datastreams_features_revert($module_name) {
 }
 
 function field_datastreams_features_rebuild($module_name) {
+  field_datastreams_features_disable_feature($module_name);
   $fields = module_invoke($module_name, 'field_datastreams_defaults');
   if (!empty($fields)) {
     foreach ($fields as $field) {
       drupal_write_record('islandora_sync_fields', $field);
-
     }
   }
 }
 
 function field_datastreams_features_enable_feature($module_name) {
   field_datastreams_features_rebuild($module_name);
+}
+
+function field_datastreams_features_disable_feature($module_name) {
+  $fields = module_invoke($module_name, 'field_datastreams_defaults');
+  foreach($fields as $field) {
+    db_delete('islandora_sync_fields')->condition('bundle', $field['bundle'])->condition('field', $field['field'])->execute();
+  }
 }
 
 function islandora_sync_bundle_settings_features_export($data, &$export, $module_name) {
@@ -90,6 +97,7 @@ function islandora_sync_bundle_settings_features_revert($module_name) {
 }
 
 function islandora_sync_bundle_settings_features_rebuild($module_name) {
+  islandora_sync_bundle_settings_features_disable_feature($module_name);
   $bundles = module_invoke($module_name, 'islandora_sync_bundle_settings_defaults');
   if (!empty($bundles)) {
     foreach ($bundles as $bundle) {
@@ -105,4 +113,14 @@ function islandora_sync_bundle_settings_features_rebuild($module_name) {
 
 function islandora_sync_bundle_settings_features_enable_feature($module_name) {
   islandora_sync_bundle_settings_features_rebuild($module_name);
+}
+
+function islandora_sync_bundle_settings_features_disable_feature($module_name) {
+  $bundles = module_invoke($module_name, 'islandora_sync_bundle_settings_defaults');
+  foreach ($bundles as $bundle) {
+    foreach ($bundle['cmodels'] as $cmodel) {
+      db_delete('islandora_sync_type_cmodel')->condition('bundle', $bundle['bundle'])->condition('cmodel', $cmodel['cmodel'])->execute();
+    }
+    db_delete('islandora_sync_type_settings')->condition('bundle', $bundle['bundle'])->execute();
+  }
 }
