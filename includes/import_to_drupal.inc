@@ -154,11 +154,13 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
   $prepared_field = &$entity->{$field_info->field}[$lang];
   switch ($field_info->type) {
     case 'image':
+    case 'file':
       module_load_include('inc', 'islandora', 'mime_detect');
       $mime_detect = new MimeDetect();
       $extension = $mime_detect->getExtension($value['mimetype']);
       $file_name = $field_info->dsid . '-' . $entity->type . '-' . $id . '.' . $extension;
       $file = file_save_data($value['content'], 'public://' . $file_name, FILE_EXISTS_RENAME);
+      $file->display = 1;
       $prepared_field[] = (array) $file;
       break;
 

@@ -137,6 +137,13 @@ function islandora_sync_update_from_fedora(FedoraObject $object) {
 }
 
 /**
+ * Implements hook_islandora_datastream_ingested().
+ */
+function islandora_sync_islandora_datastream_ingested(FedoraObject $object, FedoraDatastream $datastream) {
+  islandora_sync_update_from_fedora($object);
+}
+
+/**
  * Implements hook_islandora_datastream_purged().
  */
 function islandora_sync_islandora_datastream_purged(FedoraObject $object, $dsid) {
@@ -305,9 +312,17 @@ function islandora_sync_node_update($node) {
 /**
  * Implements hook_module_implements_alter().
  * This is used to attempt to have islandora_sync form_alter implementations after other modules such as field_group.
+ * This also done to ensure islandora_sync hooks are fired after operations done by solution packs
+ * (ex. derivative generation).
  */
 function islandora_sync_module_implements_alter(&$implementations, $hook) {
-  if (($hook == 'form_field_ui_field_overview_form_alter' || $hook == 'form_alter') && isset($implementations['islandora_sync'])) {
+  $hooks = array(
+    'form_field_ui_field_overview_form_alter',
+    'form_alter',
+    'islandora_object_ingested',
+  );
+
+  if (in_array($hook, $hooks) && isset($implementations['islandora_sync'])) {
     $group = $implementations['islandora_sync'];
     unset($implementations['islandora_sync']);
     $implementations['islandora_sync'] = $group;

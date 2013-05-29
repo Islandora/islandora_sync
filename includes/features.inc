@@ -1,7 +1,7 @@
 <?php
 
 function field_datastreams_features_export($data, &$export, $module_name) {
-  foreach ($data AS $component) {
+  foreach ($data as $component) {
     $export['features']['field_datastreams'][$component] = $component;
   }
   return array();
@@ -126,7 +126,7 @@ function islandora_sync_bundle_settings_features_disable_feature($module_name) {
 }
 
 function islandora_sync_xml_ds_settings_features_export($data, &$export, $module_name) {
-  foreach ($data AS $component) {
+  foreach ($data as $component) {
     $export['features']['islandora_sync_xml_ds_settings'][$component] = $component;
   }
   return array();
