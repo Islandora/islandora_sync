@@ -164,6 +164,29 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
       $prepared_field[] = (array) $file;
       break;
 
+    case 'taxonomy_term_reference':
+      $term_field_info = db_query("SELECT * FROM {field_config_instance} WHERE field_name = :field_name AND bundle = :bundle",
+        array(':field_name' => $field_info->field, ':bundle' => $field_info->bundle)
+      )->fetchObject();
+      $term_data = unserialize($term_field_info->data);
+      $vid = db_query("SELECT vid FROM {taxonomy_vocabulary} WHERE name = :name",
+        array(':name' => $term_data['label'])
+      )->fetchField();
+
+      $terms = taxonomy_get_term_by_name($value);
+      if (!empty($terms)) {
+        $term_id = key($terms);
+      }
+      else {
+        $term = new stdClass();
+        $term->name = $value;
+        $term->vid = $vid;
+        taxonomy_term_save($term);
+        $term_id = $term->tid;
+      }
+      $prepared_field[]['tid'] = $term_id;
+      break;
+
     default:
       $prepared_field[]['value'] = $value;
   }
