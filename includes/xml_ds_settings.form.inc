@@ -20,6 +20,7 @@ function islandora_sync_xml_ds_add($form, &$form_state, $ds_id = NULL) {
   $form = array();
   $form['#tree'] = TRUE;
 
+  $namespaces = array();
   if (!is_null($ds_id)) {
     $ds_settings = db_query("SELECT * FROM {islandora_sync_xml_ds} WHERE ds_id = :ds_id",
       array(':ds_id' => $ds_id)
@@ -29,7 +30,6 @@ function islandora_sync_xml_ds_add($form, &$form_state, $ds_id = NULL) {
     )->fetchAll();
 
     // Normalize to a arrays
-    $namespaces = array();
     foreach ($namespaces_objs as $namespace) {
       $namespaces[] = array('prefix' => $namespace->prefix, 'uri' => $namespace->uri);
     }
@@ -123,38 +123,33 @@ function islandora_sync_xml_ds_add($form, &$form_state, $ds_id = NULL) {
 
 function islandora_sync_xml_ds_add_namespace_add($form, &$form_state) {
   $form_state['rebuild'] = TRUE;
-}
-
-function islandora_sync_xml_ds_add_namespace_remove($form, &$form_state) {
-  $form_state['rebuild'] = TRUE;
+  drupal_set_message(t('Namespace added.'));
 }
 
 function islandora_sync_xml_ds_add_validate($form, &$form_state) {
-  $dsid_exists = db_query('SELECT 1 FROM {islandora_sync_xml_ds} WHERE ds_id = :ds_id',
-    array('ds_id' => $form_state['values']['ds_id'])  //@TODO: handle ds_id case
-  )->fetchAll();
-  if ($dsid_exists) {
-    form_set_error('ds_id', t('This datastream already exists.'));
+  if (isset($form_state['values']['ds_id_update']) && !$form_state['values']['ds_id_update']) {
+    $dsid_exists = db_query('SELECT 1 FROM {islandora_sync_xml_ds} WHERE ds_id = :ds_id',
+      array('ds_id' => $form_state['values']['ds_id'])  //@TODO: handle ds_id case
+    )->fetchAll();
+    if ($dsid_exists) {
+      form_set_error('ds_id', t('This datastream already exists.'));
+    }
   }
 }
 
 function islandora_sync_xml_ds_add_submit($form, &$form_state) {
   $values = $form_state['values'];
   $record = array('ds_id' => $values['ds_id'], 'root' => $values['root'], 'namespace_uri' => $values['namespace_uri']);
-  if ($values['ds_id_update']) {
+
+  if (isset($values['ds_id_update']) && $values['ds_id_update']) {
     drupal_write_record('islandora_sync_xml_ds', $record, 'ds_id');
   }
   else {
     drupal_write_record('islandora_sync_xml_ds', $record);
   }
 
-  if (!empty($values['existing_namespaces'])) {
-    // Just delete existing
-    foreach ($values['existing_namespaces'] as $namespace) {
-      db_delete('islandora_sync_xml_ds_namespaces')->condition('ds_id', $namespace->ds_id)->execute();
-    }
+  db_query('DELETE FROM {islandora_sync_xml_ds_namespaces} WHERE ds_id = :ds_id', array(':ds_id' => $form_state['values']['ds_id']));
 
-  }
   foreach (islandora_sync_xml_ds_normalize_namespace_values($values['namespaces']) as $namespace) {
     if (is_array($namespace)) {
       $record = array('ds_id' => $values['ds_id'], 'prefix' => $namespace['prefix'], 'uri' => $namespace['uri']);
@@ -163,10 +158,6 @@ function islandora_sync_xml_ds_add_submit($form, &$form_state) {
   }
   drupal_set_message(t('Datastream settings saved'));
   $form_state['redirect'] = 'admin/islandora/sync/xml-datastreams';
-}
-
-function islandora_sync_xml_ds_edit($form, $form_state, $ds_id) {
-  return drupal_get_form('islandora_sync_xml_ds_add', $ds_id);
 }
 
 function islandora_sync_xml_ds_delete($form, $form_state, $ds_id) {

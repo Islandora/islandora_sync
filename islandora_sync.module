@@ -43,7 +43,7 @@ function islandora_sync_menu() {
   $items['admin/islandora/sync/xml-datastreams/%/edit'] = array(
     'title' => 'Edit XML Datastream Settings',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('islandora_sync_xml_ds_edit', 4),
+    'page arguments' => array('islandora_sync_xml_ds_add', 4),
     'access arguments' => array('islandora sync settings'),
     'type' => MENU_CALLBACK,
     'file' => 'includes/xml_ds_settings.form.inc',
