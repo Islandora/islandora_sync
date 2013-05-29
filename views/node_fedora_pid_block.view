@@ -27,6 +27,8 @@ $handler->display->display_options['fields']['pid']['id'] = 'pid';
 $handler->display->display_options['fields']['pid']['table'] = 'islandora_sync_map';
 $handler->display->display_options['fields']['pid']['field'] = 'pid';
 $handler->display->display_options['fields']['pid']['label'] = '';
+$handler->display->display_options['fields']['pid']['alter']['make_link'] = TRUE;
+$handler->display->display_options['fields']['pid']['alter']['path'] = 'islandora/object/[pid]';
 $handler->display->display_options['fields']['pid']['element_label_colon'] = FALSE;
 /* Contextual filter: Content: Nid */
 $handler->display->display_options['arguments']['nid']['id'] = 'nid';
@@ -40,3 +42,4 @@ $handler->display->display_options['arguments']['nid']['summary_options']['items
 
 /* Display: Block */
 $handler = $view->new_display('block', 'Block', 'block');
+$handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
