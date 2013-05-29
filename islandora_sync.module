@@ -355,6 +355,16 @@ function islandora_sync_features_api() {
   );
 }
 
+/**
+ * Implements hook_views_api().
+ */
+function islandora_sync_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'islandora_sync') . '/includes',
+  );
+}
+
 function islandora_sync_get_content_models() {
   module_load_include('inc', 'islandora', 'includes/tuque');
 
