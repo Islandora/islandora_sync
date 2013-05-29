@@ -1,13 +1,13 @@
 <?php
 
-function field_datastreams_features_export($data, &$export, $module_name) {
+function islandora_sync_field_datastreams_features_export($data, &$export, $module_name) {
   foreach ($data as $component) {
-    $export['features']['field_datastreams'][$component] = $component;
+    $export['features']['islandora_sync_field_datastreams'][$component] = $component;
   }
   return array();
 }
 
-function field_datastreams_features_export_options() {
+function islandora_sync_field_datastreams_features_export_options() {
   $options = array();
   $fields = db_query("SELECT * FROM {islandora_sync_fields}")->fetchAll();
   foreach ($fields as $field) {
@@ -17,28 +17,28 @@ function field_datastreams_features_export_options() {
   return $options;
 }
 
-function field_datastreams_features_export_render($module_name, $data, $export = NULL) {
+function islandora_sync_field_datastreams_features_export_render($module_name, $data, $export = NULL) {
   $code = array();
-  $code[] = '$field_datastreams = array();';
+  $code[] = '$islandora_sync_field_datastreams = array();';
   foreach ($data as $name) {
     list($bundle, $field_name) = explode(':', $name);
     $field = db_query("SELECT * FROM {islandora_sync_fields} WHERE bundle = :bundle AND field = :field",
       array(':bundle' => $bundle, ':field' => $field_name)
     )->fetchObject();
-    $code[] = "  \$field_datastreams['{$name}'] = " . features_var_export($field) .";";
+    $code[] = "  \$islandora_sync_field_datastreams['{$name}'] = " . features_var_export($field) .";";
   }
-  $code[] = "return \$field_datastreams;";
+  $code[] = "return \$islandora_sync_field_datastreams;";
   $code = implode("\n", $code);
-  return array('field_datastreams_defaults' => $code);
+  return array('islandora_sync_field_datastreams_defaults' => $code);
 }
 
-function field_datastreams_features_revert($module_name) {
-  field_datastreams_features_rebuild($module_name);
+function islandora_sync_field_datastreams_features_revert($module_name) {
+  islandora_sync_field_datastreams_features_rebuild($module_name);
 }
 
-function field_datastreams_features_rebuild($module_name) {
-  field_datastreams_features_disable_feature($module_name);
-  $fields = module_invoke($module_name, 'field_datastreams_defaults');
+function islandora_sync_field_datastreams_features_rebuild($module_name) {
+  islandora_sync_field_datastreams_features_disable_feature($module_name);
+  $fields = module_invoke($module_name, 'islandora_sync_field_datastreams_defaults');
   if (!empty($fields)) {
     foreach ($fields as $field) {
       drupal_write_record('islandora_sync_fields', $field);
@@ -46,12 +46,12 @@ function field_datastreams_features_rebuild($module_name) {
   }
 }
 
-function field_datastreams_features_enable_feature($module_name) {
-  field_datastreams_features_rebuild($module_name);
+function islandora_sync_field_datastreams_features_enable_feature($module_name) {
+  islandora_sync_field_datastreams_features_rebuild($module_name);
 }
 
-function field_datastreams_features_disable_feature($module_name) {
-  $fields = module_invoke($module_name, 'field_datastreams_defaults');
+function islandora_sync_field_datastreams_features_disable_feature($module_name) {
+  $fields = module_invoke($module_name, 'islandora_sync_field_datastreams_defaults');
   foreach($fields as $field) {
     db_delete('islandora_sync_fields')->condition('bundle', $field['bundle'])->condition('field', $field['field'])->execute();
   }
