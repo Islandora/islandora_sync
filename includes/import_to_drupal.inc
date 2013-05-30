@@ -11,6 +11,8 @@ function islandora_sync_import_from_pid($pid, $type, $nid = FALSE) {
   }
   else {
     $node = node_load($nid);
+    $node->revision = 1; // Is this good, many revisions seem to be created
+    $node->log = 'Updated by islandora_sync';
   }
 
   $node->title = $object->label;
@@ -22,7 +24,8 @@ function islandora_sync_import_from_pid($pid, $type, $nid = FALSE) {
   else {
     $node->uid = 1;
   }
-  node_save($node); // Call before adding fields to get nid, does this add noise to revisions?
+  // Call node_save to get a nid
+  node_save($node);
   islandora_sync_build_node_fields($node, $object);
   node_save($node);
 
@@ -40,68 +43,27 @@ function islandora_sync_import_from_pid($pid, $type, $nid = FALSE) {
 function islandora_sync_build_node_fields(&$node, $object) {
   $fields_to_populate = db_query("SELECT fcef.*, fc.type FROM {islandora_sync_fields} fcef
     LEFT JOIN {field_config} fc ON fc.field_name = fcef.field
-    WHERE fcef.bundle = :bundle
-    AND fc.type != 'field_collection'",
+    WHERE fcef.bundle = :bundle",
     array(':bundle' => $node->type)
   )->fetchAll();
 
   foreach ($fields_to_populate as $field) {
-    $values = get_field_values($field, $object);
+    $return = module_invoke_all('islandora_sync_node_field_build', $node, $object, $field);
 
-    if ($field->field != 'title') {
+    if (!$return) {
+      $values = get_field_values($field, $object);
+      $existing_title = $node->title;
       $node->{$field->field} = array();
-      foreach ($values as $value) {
-        islandora_sync_save_field($field, $node, $value);
-      }
-    }
-    else {
-      if ($values[0]) {
-        $node->title = $values[0];
-      }
-
-    }
-
-  }
-
-  // @TODO: merge with query above and provide function with options to build query
-  $field_collection_fields = db_query("SELECT * FROM {islandora_sync_fields} fcef
-    LEFT JOIN {field_config_instance} fci ON fci.field_name = fcef.field
-    LEFT JOIN {field_config} fc ON fc.field_name = fci.bundle
-    WHERE fc.type = 'field_collection'"
-  )->fetchAllAssoc('field');
-
-  $values = array();
-  foreach ($field_collection_fields as $field_collection_field) {
-    $values[$field_collection_field->bundle][$field_collection_field->field] = get_field_values($field_collection_field, $object, array($field_collection_field->bundle));
-  }
-
-  foreach ($values as $bundle => $fields) {
-    $collection_count = 0;
-    foreach ($fields as $value) {
-      if (count($value) > $collection_count) {
-        $collection_count = count($value);
-      }
-    }
-
-    if ($collection_count) {
-      // Remove existing field collections which are attached. Updating existing seems difficult.
-      $existing_collection_count = count($node->{$bundle}[$node->language]);
-      for ($i = 0; $i < $existing_collection_count; $i++) {
-        $id = $node->{$bundle}[$node->language][$i]['value'];
-        entity_delete('field_collection_item', $id);
-        unset($node->{$bundle}[$node->language][$i]);
-      }
-
-      for ($i = 0; $i < $collection_count; $i++) {
-        $field_collection_item = entity_create('field_collection_item', array('field_name' => $bundle));
-        $field_collection_item->setHostEntity('node', $node);
-
-        foreach ($fields as $k => $v) {
-          if ($v[$i]) {
-            islandora_sync_save_field($field_collection_fields[$k], $field_collection_item, $v[$i]);
-          }
+      $node->title = $existing_title; // Want to make sure we keep a title?
+      if ($field->field != 'title') {
+        foreach ($values as $value) {
+          islandora_sync_save_field($field, $node, $value);
         }
-        $field_collection_item->save();
+      }
+      else {
+        if (isset($values[0])) {
+          $node->title = $values[0];
+        }
       }
     }
   }
@@ -110,39 +72,79 @@ function islandora_sync_build_node_fields(&$node, $object) {
 function get_field_values($field, $object, $parents = array()) {
   $values = array();
 
-  if ($field->export_type == 'xml_value') {
-    $read_path = '/mods:mods';   //@TODO: create root element
-    $field_path = db_query("SELECT read_path FROM {islandora_sync_fields} WHERE field = :field AND bundle = :bundle",
-      array(':field' => $field->field, ':bundle' => $field->bundle)
-    )->fetchField();
-    if ($field->read_context == 'parent') {
-      $parent_path = islandora_sync_get_parent_path($field, $parents);
-      $read_path .= $parent_path;
-      if ($field_path) {
-        $read_path .= '/' . $field_path; //@TODO: should text() be here?
+  switch ($field->export_type) {
+    case 'xml_value':
+      $root = db_query("SELECT isxdn.prefix, isxd.root FROM {islandora_sync_xml_ds_namespaces} isxdn
+        LEFT JOIN {islandora_sync_xml_ds} isxd ON isxd.namespace_uri = isxdn.uri
+        WHERE isxd.ds_id = :ds_id",
+        array(':ds_id' => $field->dsid)
+      )->fetchObject();
+
+      if (isset($root->prefix) && isset($root->root)) {
+        $read_path = '/' . $root->prefix . ':' . $root->root;
       }
-    }
-    else {
-      $read_path = $field_path;
-    }
-
-    $ds_content = $object[$field->dsid]->content;
-    $doc = new DOMDocument();
-    $doc->loadXML($ds_content);
-    if ($doc) {
-      $xpath = new DOMXPath($doc);
-      $xml_values = $xpath->query($read_path);
-      foreach ($xml_values as $xml_value) {
-        $values[] = $xml_value->nodeValue;
+      else {
+        $read_path = '//';
       }
-    }
 
-  }
-  else {
-    // managed datastream
-    $values[] = array('content' => $object[$field->dsid]->content, 'mimetype' => $object[$field->dsid]->mimetype);  //@TODO: stream to get around memory constraints?
+      $field_path = db_query("SELECT read_path FROM {islandora_sync_fields} WHERE field = :field AND bundle = :bundle",
+        array(':field' => $field->field, ':bundle' => $field->bundle)
+      )->fetchField();
+      if ($field->read_context == 'parent') {
+        $parent_path = islandora_sync_get_parent_path($field, $parents);
+        $read_path .= $parent_path;
+        if ($field_path) {
+          $read_path .= '/' . $field_path;
+        }
+      }
+      else {
+        $read_path = $field_path;
+      }
 
+      $ds_content = FALSE;
+      try {
+        if (is_object($object[$field->dsid])) {
+          $ds_content = $object[$field->dsid]->content;
+        }
+
+      }
+      catch (Exception $e) {
+
+      }
+
+      if ($ds_content) {
+        $doc = new DOMDocument();
+        $doc->loadXML($ds_content);
+        if ($doc) {
+          $xpath = new DOMXPath($doc);
+          $xml_values = $xpath->query($read_path);
+          foreach ($xml_values as $xml_value) {
+            $values[] = $xml_value->nodeValue;
+          }
+        }
+      }
+
+      break;
+
+    case 'managed_datastream':
+      try {
+        if (is_object($object[$field->dsid])) {
+          $values[] = array('content' => $object[$field->dsid]->content, 'mimetype' => $object[$field->dsid]->mimetype);  //@TODO: stream to get around memory constraints?
+        }
+      }
+      catch (Exception $e) {
+
+      }
+      break;
+
+    case 'relationship':
+      $rels = $object->relationships->get($field->predicate_uri, $field->predicate);
+      foreach ($rels as $rel) {
+        $values[] = $rel['object']['value'];
+      }
+      break;
   }
+
   return $values;
 }
 
@@ -152,13 +154,39 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
   $prepared_field = &$entity->{$field_info->field}[$lang];
   switch ($field_info->type) {
     case 'image':
+    case 'file':
       module_load_include('inc', 'islandora', 'mime_detect');
       $mime_detect = new MimeDetect();
       $extension = $mime_detect->getExtension($value['mimetype']);
       $file_name = $field_info->dsid . '-' . $entity->type . '-' . $id . '.' . $extension;
       $file = file_save_data($value['content'], 'public://' . $file_name, FILE_EXISTS_RENAME);
+      $file->display = 1;
       $prepared_field[] = (array) $file;
       break;
+
+    case 'taxonomy_term_reference':
+      $term_field_info = db_query("SELECT * FROM {field_config_instance} WHERE field_name = :field_name AND bundle = :bundle",
+        array(':field_name' => $field_info->field, ':bundle' => $field_info->bundle)
+      )->fetchObject();
+      $term_data = unserialize($term_field_info->data);
+      $vid = db_query("SELECT vid FROM {taxonomy_vocabulary} WHERE name = :name",
+        array(':name' => $term_data['label'])
+      )->fetchField();
+
+      $terms = taxonomy_get_term_by_name($value);
+      if (!empty($terms)) {
+        $term_id = key($terms);
+      }
+      else {
+        $term = new stdClass();
+        $term->name = $value;
+        $term->vid = $vid;
+        taxonomy_term_save($term);
+        $term_id = $term->tid;
+      }
+      $prepared_field[]['tid'] = $term_id;
+      break;
+
     default:
       $prepared_field[]['value'] = $value;
   }
@@ -171,12 +199,17 @@ function islandora_sync_get_parent_path($field, $parents = array()) {
   $parents = array_reverse($parents);
   foreach ($parents as $parent) {
     // @TODO: field could belong to multiple bundles, query with bundle
-    $field_read_path = db_query("SELECT read_path FROM {islandora_sync_fields} WHERE field = :field",
+    $field_read = db_query("SELECT read_path, read_context FROM {islandora_sync_fields} WHERE field = :field",
       array(':field' => $parent)
-    )->fetchField();
-    // @TODO: if document read context, get it and end
-    if ($field_read_path && $field_read_path != $path) {
-      $path .= '/' . $field_read_path;
+    )->fetchObject();
+    if ($field_read && $field_read->read_path != $path) {
+      if ($field_read->read_context == 'parent') {
+        $path .= '/' . $field_read->read_path;
+      }
+      elseif ($field_read->read_context == 'document') {
+        $path .= '/' . $field_read->read_path;
+        return $path;
+      }
     }
   }
 

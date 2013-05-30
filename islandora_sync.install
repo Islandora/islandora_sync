@@ -64,6 +64,18 @@ function islandora_sync_schema() {
         'size' => 'small',
         'not null' => TRUE,
       ),
+      'predicate' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'predicate_uri' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
     ),
     'primary key' => array('bundle', 'field'),
   );
@@ -239,12 +251,18 @@ function islandora_sync_schema() {
       ),
       'operation' => array(
         'type' => 'varchar',
-        'length' => 20,
+        'length' => 40,
       ),
       'processed_time' => array(
         'type' => 'int',
         'size' => 'big',
         'unsigned' => TRUE,
+      ),
+      'data' => array(
+        'type' => 'blob',
+        'size' => 'big',
+        'serialize' => TRUE,
+        'not null' => FALSE,
       ),
     ),
     'primary key' => array('id'),
