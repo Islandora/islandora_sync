@@ -313,8 +313,22 @@ function islandora_sync_node_update($node) {
  * Implements hook_node_type_delete().
  */
 function islandora_sync_node_type_delete($info) {
-  db_delete('islandora_sync_type_settings')->condition('bundle', $info->type)->execute();
-  db_delete('islandora_sync_type_cmodel')->condition('bundle', $info->type)->execute();
+  db_delete('islandora_sync_type_settings')
+    ->condition('bundle', $info->type)
+    ->execute();
+  db_delete('islandora_sync_type_cmodel')
+    ->condition('bundle', $info->type)
+    ->execute();
+}
+
+/**
+ * Implements hook_field_delete_instance().
+ */
+function islandora_sync_field_delete_instance($instance) {
+  db_delete('islandora_sync_fields')
+    ->condition('bundle', $instance['bundle'])
+    ->condition('field', $instance['field_name'])
+    ->execute();
 }
 
 /**
