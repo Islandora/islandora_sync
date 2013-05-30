@@ -310,6 +310,13 @@ function islandora_sync_node_update($node) {
 }
 
 /**
+ * Implements hook_node_type_delete().
+ */
+function islandora_sync_node_type_delete($info) {
+  db_delete('islandora_sync_type_settings')->condition('bundle', $info->type)->execute();
+}
+
+/**
  * Implements hook_module_implements_alter().
  * This is used to attempt to have islandora_sync form_alter implementations after other modules such as field_group.
  * This also done to ensure islandora_sync hooks are fired after operations done by solution packs
