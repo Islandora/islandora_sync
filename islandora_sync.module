@@ -314,6 +314,7 @@ function islandora_sync_node_update($node) {
  */
 function islandora_sync_node_type_delete($info) {
   db_delete('islandora_sync_type_settings')->condition('bundle', $info->type)->execute();
+  db_delete('islandora_sync_type_cmodel')->condition('bundle', $info->type)->execute();
 }
 
 /**
