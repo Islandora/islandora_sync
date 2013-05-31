@@ -106,11 +106,10 @@ function islandora_sync_islandora_object_modified(FedoraObject $object) {
  * Implements hook_islandora_datatastream_modified().
  */
 function islandora_sync_islandora_datastream_modified(FedoraObject $object, FedoraDatastream $datastream) {
-  // @TODO: should send dsid to update, limit fields that are updated
-  islandora_sync_update_from_fedora($object);
+  islandora_sync_update_from_fedora($object, $datastream->id);
 }
 
-function islandora_sync_update_from_fedora(FedoraObject $object) {
+function islandora_sync_update_from_fedora(FedoraObject $object, $ds_id = NULL) {
   $bundle_info = db_query("SELECT * FROM {islandora_sync_type_settings} ists
     INNER JOIN {islandora_sync_type_cmodel} istc ON istc.bundle = ists.bundle
     WHERE istc.cmodel IN (:models)
@@ -123,7 +122,7 @@ function islandora_sync_update_from_fedora(FedoraObject $object) {
     module_load_include('inc', 'islandora_sync', 'includes/import_to_drupal');
 
     //@TODO: should objects that haven't been synced at all be created?
-    islandora_sync_import_from_pid($object->id, $bundle_info->bundle, $nid);
+    islandora_sync_import_from_pid($object->id, $bundle_info->bundle, $nid, $ds_id);
   }
   elseif ($bundle_info) {
     $queue['pid'] = $object->id;
@@ -131,6 +130,7 @@ function islandora_sync_update_from_fedora(FedoraObject $object) {
     $queue['bundle'] = $bundle_info->bundle;
     $queue['entity_id'] = $nid;
     $queue['operation'] = 'update_drupal';
+    $queue['data'] = array('dsid' => $ds_id);
     //@TODO: limit queue to 1 op/object
     drupal_write_record('islandora_sync_queue', $queue);
   }
@@ -140,7 +140,7 @@ function islandora_sync_update_from_fedora(FedoraObject $object) {
  * Implements hook_islandora_datastream_ingested().
  */
 function islandora_sync_islandora_datastream_ingested(FedoraObject $object, FedoraDatastream $datastream) {
-  islandora_sync_update_from_fedora($object);
+  islandora_sync_update_from_fedora($object, $datastream->id);
 }
 
 /**
@@ -258,7 +258,8 @@ function islandora_sync_cron() {
         break;
 
       case 'update_drupal':
-        islandora_sync_import_from_pid($item->pid, $item->bundle, $item->entity_id);
+        $data = unserialize($item->data);
+        islandora_sync_import_from_pid($item->pid, $item->bundle, $item->entity_id, $data['dsid']);
         break;
 
       case 'delete_datastream_field':

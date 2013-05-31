@@ -1,6 +1,6 @@
 <?php
 
-function islandora_sync_import_from_pid($pid, $type, $nid = FALSE) {
+function islandora_sync_import_from_pid($pid, $type, $nid = FALSE, $ds_id = NULL) {
   $object = islandora_object_load($pid);
 
   if (!$nid) {
@@ -25,8 +25,11 @@ function islandora_sync_import_from_pid($pid, $type, $nid = FALSE) {
     $node->uid = 1;
   }
   // Call node_save to get a nid
-  node_save($node);
-  islandora_sync_build_node_fields($node, $object);
+  if (!$nid) {
+    node_save($node);
+  }
+
+  islandora_sync_build_node_fields($node, $object, $ds_id);
   node_save($node);
 
   if (!$nid) {
@@ -40,15 +43,25 @@ function islandora_sync_import_from_pid($pid, $type, $nid = FALSE) {
   return $node->nid;
 }
 
-function islandora_sync_build_node_fields(&$node, $object) {
-  $fields_to_populate = db_query("SELECT fcef.*, fc.type FROM {islandora_sync_fields} fcef
+function islandora_sync_build_node_fields(&$node, $object, $ds_id) {
+  if (is_null($ds_id)) {
+    $fields_to_populate = db_query("SELECT fcef.*, fc.type FROM {islandora_sync_fields} fcef
     LEFT JOIN {field_config} fc ON fc.field_name = fcef.field
     WHERE fcef.bundle = :bundle",
-    array(':bundle' => $node->type)
-  )->fetchAll();
+      array(':bundle' => $node->type)
+    )->fetchAll();
+  }
+  else {
+    $fields_to_populate = db_query("SELECT fcef.*, fc.type FROM {islandora_sync_fields} fcef
+    LEFT JOIN {field_config} fc ON fc.field_name = fcef.field
+    WHERE fcef.bundle = :bundle
+    AND fcef.dsid = :ds_id",
+      array(':bundle' => $node->type, ':ds_id' => $ds_id)
+    )->fetchAll();
+  }
 
   foreach ($fields_to_populate as $field) {
-    $return = module_invoke_all('islandora_sync_node_field_build', $node, $object, $field);
+    $return = module_invoke_all('islandora_sync_node_field_build', $node, $object, $field, $ds_id);
 
     if (!$return) {
       $values = get_field_values($field, $object);
