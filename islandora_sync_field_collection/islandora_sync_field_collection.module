@@ -44,7 +44,7 @@ function islandora_sync_field_collection_islandora_sync_node_field_build($node, 
         $field_collection_item->setHostEntity('node', $node);
 
         foreach ($values as $k => $v) {
-          if ($v[$i]) {
+          if (isset($v[$i]) && $v[$i]) {
             islandora_sync_save_field($child_fields[$k], $field_collection_item, $v[$i]);
           }
         }
