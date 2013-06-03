@@ -2,7 +2,7 @@
 
 function islandora_sync_field_settings_form($form, $form_state, $type, $field) {
   $type = str_replace('-', '_', $type);
-  $field_settings = islandora_sync_field_settings($type, $field);
+  $field_settings = islandora_sync_get_field_settings($type, $field);
   if (empty($field_settings)) {
     $settings = new stdClass();
     $settings->new = TRUE;
@@ -86,7 +86,7 @@ function islandora_sync_field_settings_form($form, $form_state, $type, $field) {
   $form['xml']['create'] = array(
     '#type' => 'checkbox',
     '#title' => t('Create'),
-    '#description' => t('If checked, create an XML element when creating or updating a node.')
+    '#description' => t('If checked, create an XML element when creating or updating a node.'),
   );
   if (isset($settings->create_value)) {
     $form['xml']['create']['#default_value'] = TRUE;
@@ -143,7 +143,7 @@ function islandora_sync_field_settings_form($form, $form_state, $type, $field) {
   $form['xml']['read'] = array(
     '#type' => 'checkbox',
     '#title' => t('Read'),
-    '#description' => t('If checked, read an XML value when importing a Fedora Commons object.')
+    '#description' => t('If checked, read an XML value when importing a Fedora Commons object.'),
   );
   if (isset($settings->read_path)) {
     $form['xml']['read']['#default_value'] = TRUE;
@@ -184,7 +184,7 @@ function islandora_sync_field_settings_form($form, $form_state, $type, $field) {
     '#collapsible' => FALSE,
     '#states' => array(
       'visible' => array(
-        ':input[name="export_type"]' =>  array('value' => 'relationship'),
+        ':input[name="export_type"]' => array('value' => 'relationship'),
       ),
     ),
   );
