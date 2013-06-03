@@ -172,7 +172,7 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
       $mime_detect = new MimeDetect();
       $extension = $mime_detect->getExtension($value['mimetype']);
       $file_name = $field_info->dsid . '-' . $entity->type . '-' . $id . '.' . $extension;
-      $file = file_save_data($value['content'], 'public://' . $file_name, FILE_EXISTS_RENAME);
+      $file = file_save_data($value['content'], 'public://' . $file_name, FILE_EXISTS_REPLACE);
       $file->display = 1;
       $prepared_field[] = (array) $file;
       break;
