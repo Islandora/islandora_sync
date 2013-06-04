@@ -5,6 +5,9 @@
  * Expose Islandora Sync database tables to views.
  */
 
+/**
+ * Implements hook_views_data().
+ */
 function islandora_sync_views_data() {
   $data = array();
   $data['islandora_sync_map']['table']['group'] = t('Islandora');

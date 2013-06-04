@@ -31,8 +31,21 @@ function islandora_sync_relation_islandora_sync_node_field_build($node, $object,
   }
 }
 
+/**
+ * Save relation fields.
+ *
+ * @param $field_info
+ *   Field object record as stored in islandora_sync_fields table.
+ * @param $entity
+ *   The entity that contains the field.
+ * @param $value
+ *   The field value.
+ */
 function islandora_sync_relation_save_field($field_info, &$entity, $value) {
-  $rel_id = db_query("SELECT * FROM {islandora_sync_map} WHERE pid = :pid", array(':pid' => $value))->fetchObject();
+  $rel_id = db_query("SELECT * FROM {islandora_sync_map}
+    WHERE pid = :pid",
+    array(':pid' => $value)
+  )->fetchObject();
   if ($rel_id) {
     $endpoints = array(
       array('entity_type' => 'node', 'entity_id' => $rel_id->entity_id),
@@ -43,7 +56,7 @@ function islandora_sync_relation_save_field($field_info, &$entity, $value) {
     )->fetchObject();
     $field_data = unserialize($field_data->data);
     $rel_type = $field_data['settings']['relation_type'];
-    // Check if exists
+    // Check if relation exists.
     if (relation_relation_exists($endpoints, $rel_type)) {
       return;
     }
