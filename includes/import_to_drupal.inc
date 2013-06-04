@@ -6,16 +6,17 @@
  */
 
 /**
- * Point of entry in the process of creating/updating Drupal nodes based on a Fedora PID.
+ * Entry point in creation and updating of Drupal nodes based on a Fedora PID.
  *
- * @param $pid
+ * @param string $pid
  *   Fedora object pid.
- * @param $type
+ * @param string $type
  *   Drupal bundle type (node type).
- * @param $nid
+ * @param int $nid
  *   Drupal node ID, use for content updates.
- * @param $ds_id
- *   The Fedora object datastream ID, use to limit the scope of a content update.
+ * @param string $ds_id
+ *   The Fedora object datastream ID, use to limit scope of a content update.
+ *
  * @return int
  *   Node ID of created/updated Drupal node.
  */
@@ -68,14 +69,19 @@ function islandora_sync_import_from_pid($pid, $type, $nid = FALSE, $ds_id = NULL
 /**
  * Populate a node's fields based on mappings of Fedora content to Drupal.
  *
- * @param $node
+ * @param Node $node
  *   The node object that is being updated.
- * @param $object
+ * @param AbstractObject $object
  *   The Fedora object being synced to Drupal.
- * @param $ds_id
+ * @param string $ds_id
  *   The Fedora object datastream ID.
  */
 function islandora_sync_build_node_fields(&$node, $object, $ds_id) {
+  // Check to see if a folder already exists for this node, if not create it.
+  $node_path = "public://islandora_sync/$node->nid";
+  if (!file_prepare_directory($node_path)) {
+    drupal_mkdir($node_path);
+  }
   $fields_to_populate_query = db_select('islandora_sync_fields', 'isf');
   $fields_to_populate_query->leftJoin('field_config', 'fc', 'fc.field_name = isf.field');
   $fields_to_populate_query->fields('isf')
@@ -111,15 +117,19 @@ function islandora_sync_build_node_fields(&$node, $object, $ds_id) {
 }
 
 /**
- * Extract content from Fedora data structures based on mappings to Drupal fields.
+ * Extract content from Fedora data structures.
  *
- * @param $field
+ * The extracted content is based on defined mappings to Drupal fields.
+ *
+ * @param stdObject $field
  *   Field object record as stored in islandora_sync_fields table.
- * @param $object
+ * @param AbstractObject $object
  *   The Fedora object containing values.
  * @param array $parents
  *   Parent field names.
+ *
  * @return array
+ *   An array containing the field values.
  */
 function islandora_sync_get_field_values($field, $object, $parents = array()) {
   $values = array();
@@ -204,13 +214,15 @@ function islandora_sync_get_field_values($field, $object, $parents = array()) {
 }
 
 /**
- * Format a node's field structure for saving. This is only for core module fields.
+ * Format a node's field structure for saving.
  *
- * @param $field_info
+ * This is only for core module fields.
+ *
+ * @param stdObject $field_info
  *   Field object record as stored in islandora_sync_fields table.
- * @param $entity
+ * @param Node $entity
  *   The entity (node) being populated.
- * @param $value
+ * @param array $value
  *   The field value.
  */
 function islandora_sync_save_field($field_info, &$entity, $value) {
@@ -224,7 +236,7 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
       $mime_detect = new MimeDetect();
       $extension = $mime_detect->getExtension($value['mimetype']);
       $file_name = $field_info->dsid . '-' . $entity->type . '-' . $id . '.' . $extension;
-      $file = file_save_data($value['content'], 'public://' . $file_name, FILE_EXISTS_REPLACE);
+      $file = file_save_data($value['content'], "public://islandora_sync/$id/$file_name", FILE_EXISTS_REPLACE);
       $file->display = 1;
       $prepared_field[] = (array) $file;
       break;
@@ -260,11 +272,13 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
 /**
  * Get the parent field path of a field.
  *
- * @param $field
+ * @param stdObject $field
  *   Field object record as stored in islandora_sync_fields table.
  * @param array $parents
  *   Known parents.
+ *
  * @return string
+ *   The path to parent field.
  */
 function islandora_sync_get_parent_path($field, $parents = array()) {
   $path = '';
@@ -290,20 +304,33 @@ function islandora_sync_get_parent_path($field, $parents = array()) {
   return $path;
 }
 
-//@TODO: make recursive
+/**
+ * Retrieves parent fields.
+ *
+ * @param string $field
+ *   The name of the field.
+ * @param string $bundle
+ *   The name of the bundle.
+ * @param array $parents
+ *   The known parents.
+ *
+ * @return array
+ *   All parent fields.
+ *
+ * @TODO: make recursive
+ */
 function islandora_sync_get_parent_fields($field, $bundle, $parents) {
   $start_count = count($parents);
   $field_info = field_info_instance('node', $field, $bundle);
 
-  // is part of field_collection? has to be a better way to do this
+  // Is part of field_collection? has to be a better way to do this
   // entity_type == field_collection_item ?? in field_config_instance
   // check if module exists?
   if ($field_info['widget']['module'] == 'field_collection') {
 
   }
-  elseif (module_exists('field_group')) { // could be disabled
-    // is part of field_group?
-    // this is also terrible
+  elseif (module_exists('field_group')) {
+    // Could be disabled. Is part of field_group? This is also terrible.
     ctools_include('export');
     $groups = ctools_export_load_object('field_group', 'conditions', array(
       'entity_type' => 'node',

@@ -483,3 +483,18 @@ function islandora_sync_get_field_settings($type, $field) {
   )->fetchAll();
   return $settings;
 }
+
+/**
+ * Implements hook_node_delete().
+ */
+function islandora_sync_node_delete($node) {
+  $node_path = "public://islandora_sync/$node->nid";
+  if (file_prepare_directory($node_path)) {
+    $removal_files = file_scan_directory($node_path, '/(.*)/');
+
+    foreach ($removal_files as $file) {
+      @file_delete($file);
+    }
+    drupal_rmdir($node_path);
+  }
+}
