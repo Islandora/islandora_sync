@@ -3,7 +3,7 @@
 function islandora_sync_bundle_settings_form($form, $form_state, $bundle) {
   $form = array();
   $bundle = str_replace('-', '_', $bundle);
-  $settings = islandora_sync_bundle_settings($bundle);
+  $settings = islandora_sync_get_bundle_settings($bundle);
 
   if (isset($settings->bundle)) {
     $selected_cmodels = islandora_sync_get_bundle_cmodels($bundle);
