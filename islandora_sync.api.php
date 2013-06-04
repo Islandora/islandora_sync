@@ -16,7 +16,7 @@
  *   The node field that has been configured to be synced from Fedora Commons.
  */
 function hook_islandora_sync_node_field_build($node, $object, $field) {
-  $values = get_field_values($field, $object);
+  $values = islandora_sync_get_field_values($field, $object);
   $node->{$field->field} = array();
   if ($field->field != 'title') {
     foreach ($values as $value) {
