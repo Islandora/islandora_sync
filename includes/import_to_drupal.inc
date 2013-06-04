@@ -92,7 +92,7 @@ function islandora_sync_build_node_fields(&$node, $object, $ds_id) {
     $return = module_invoke_all('islandora_sync_node_field_build', $node, $object, $field, $ds_id);
 
     if (!$return) {
-      $values = islandora_sync_get_field_values($field, $object);
+      $values = islandora_sync_get_field_values($field, $object, $node->type, array());
       $existing_title = $node->title;
       $node->{$field->field} = array();
       $node->title = $existing_title;
@@ -119,9 +119,11 @@ function islandora_sync_build_node_fields(&$node, $object, $ds_id) {
  *   The Fedora object containing values.
  * @param array $parents
  *   Parent field names.
+ * @param $bundle
+ *   The bundle (node type).
  * @return array
  */
-function islandora_sync_get_field_values($field, $object, $parents = array()) {
+function islandora_sync_get_field_values($field, $object, $bundle, $parents = array()) {
   $values = array();
 
   switch ($field->export_type) {
@@ -143,7 +145,7 @@ function islandora_sync_get_field_values($field, $object, $parents = array()) {
         array(':field' => $field->field, ':bundle' => $field->bundle)
       )->fetchField();
       if ($field->read_context == 'parent') {
-        $parent_path = islandora_sync_get_parent_path($field, $parents);
+        $parent_path = islandora_sync_get_parent_path($field, $parents, $bundle);
         $read_path .= $parent_path;
         if ($field_path) {
           $read_path .= '/' . $field_path;
@@ -266,15 +268,15 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
  *   Known parents.
  * @return string
  */
-function islandora_sync_get_parent_path($field, $parents = array()) {
+function islandora_sync_get_parent_path($field, $parents = array(), $bundle) {
   $path = '';
   $parents = islandora_sync_get_parent_fields($field->field, $field->bundle, $parents);
 
   $parents = array_reverse($parents);
   foreach ($parents as $parent) {
     // @TODO: field could belong to multiple bundles, query with bundle
-    $field_read = db_query("SELECT read_path, read_context FROM {islandora_sync_fields} WHERE field = :field",
-      array(':field' => $parent)
+    $field_read = db_query("SELECT read_path, read_context FROM {islandora_sync_fields} WHERE field = :field AND bundle = :bundle",
+      array(':field' => $parent, ':bundle' => $bundle)
     )->fetchObject();
     if ($field_read && $field_read->read_path != $path) {
       if ($field_read->read_context == 'parent') {

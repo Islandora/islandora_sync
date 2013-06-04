@@ -18,7 +18,7 @@ function islandora_sync_relation_islandora_sync_node_field_build($node, $object,
       }
     }
 
-    $values = islandora_sync_get_field_values($field, $object);
+    $values = islandora_sync_get_field_values($field, $object, $node->type);
     $node->{$field->field} = array();
     foreach ($values as $value) {
       islandora_sync_relation_save_field($field, $node, $value);

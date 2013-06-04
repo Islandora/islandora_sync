@@ -16,7 +16,7 @@ function islandora_sync_field_collection_islandora_sync_node_field_build($node, 
 
     $values = array();
     foreach ($child_fields as $child_field_name => $child_field_info) {
-      $values[$child_field_name] = islandora_sync_get_field_values($child_field_info, $object, array($child_field_info->bundle));
+      $values[$child_field_name] = islandora_sync_get_field_values($child_field_info, $object, $node->type, array($child_field_info->bundle));
     }
 
     $collection_count = 0;
