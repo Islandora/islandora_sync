@@ -27,13 +27,15 @@ function islandora_sync_xml_ds_page() {
 /**
  * Form to add or edit XML datastream settings.
  *
- * @param $form
+ * @param array $form
  *   The form.
- * @param $form_state
+ * @param array $form_state
  *   The form state.
- * @param $ds_id
+ * @param string $ds_id
  *   The datastream ID.
+ *
  * @return array
+ *   Form structure.
  */
 function islandora_sync_xml_ds_add($form, &$form_state, $ds_id = NULL) {
   $form = array();
@@ -135,7 +137,7 @@ function islandora_sync_xml_ds_add($form, &$form_state, $ds_id = NULL) {
 
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Submit'),
+    '#value' => t('Save Datastream Settings'),
   );
   return $form;
 }
@@ -203,13 +205,15 @@ function islandora_sync_xml_ds_add_submit($form, &$form_state) {
 /**
  * Callback form for settings deletion.
  *
- * @param $form
+ * @param array $form
  *   The form.
- * @param $form_state
+ * @param array $form_state
  *   The form state.
- * @param $ds_id
+ * @param string $ds_id
  *   The datastream ID.
+ *
  * @return mixed
+ *   Form structure.
  */
 function islandora_sync_xml_ds_delete($form, $form_state, $ds_id) {
   $confirm_text = t('Delete datastream settings?');

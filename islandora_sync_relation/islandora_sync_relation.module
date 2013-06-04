@@ -10,7 +10,7 @@
  */
 function islandora_sync_relation_islandora_sync_node_field_build($node, $object, $field) {
   if ($field->type == 'relation_select') {
-    // Remove existing
+    // Remove existing values.
     if (!empty($node->{$field->field}{$node->language})) {
       $existing = array();
       foreach ($node->{$field->field}{$node->language} as $existing_rid) {
@@ -34,11 +34,11 @@ function islandora_sync_relation_islandora_sync_node_field_build($node, $object,
 /**
  * Save relation fields.
  *
- * @param $field_info
+ * @param stdObject $field_info
  *   Field object record as stored in islandora_sync_fields table.
- * @param $entity
+ * @param stdObect $entity
  *   The entity that contains the field.
- * @param $value
+ * @param string $value
  *   The field value.
  */
 function islandora_sync_relation_save_field($field_info, &$entity, $value) {

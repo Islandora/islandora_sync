@@ -276,7 +276,7 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
  *
  * @param stdObject $field
  *   Field object record as stored in islandora_sync_fields table.
- * @param $bundle
+ * @param string $bundle
  *   The node's bundle.
  * @param array $parents
  *   Known parents.
@@ -322,7 +322,6 @@ function islandora_sync_get_parent_path($field, $bundle, $parents = array()) {
  *
  * @return array
  *   All parent fields.
- *
  */
 function islandora_sync_get_parent_fields($field, $bundle, $parents) {
   $start_count = count($parents);

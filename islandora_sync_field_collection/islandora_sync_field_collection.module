@@ -58,5 +58,4 @@ function islandora_sync_field_collection_islandora_sync_node_field_build($node, 
     }
     return TRUE;
   }
-
 }

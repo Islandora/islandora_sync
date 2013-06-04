@@ -8,13 +8,15 @@
 /**
  * Islandora Sync specific settings form per node bundle (type).
  *
- * @param $form
+ * @param array $form
  *   Form structure.
- * @param $form_state
+ * @param array $form_state
  *   The form state.
- * @param $bundle
+ * @param string $bundle
  *   The bundle being modified.
+ *
  * @return array
+ *   Form structure.
  */
 function islandora_sync_bundle_settings_form($form, $form_state, $bundle) {
   $form = array();
@@ -162,7 +164,7 @@ function islandora_sync_bundle_settings_form($form, $form_state, $bundle) {
 
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Submit'),
+    '#value' => t('Save Type Settings'),
   );
   return $form;
 }

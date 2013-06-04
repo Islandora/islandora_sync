@@ -8,15 +8,17 @@
 /**
  * Field settings form for Islandora Sync.
  *
- * @param $form
+ * @param array $form
  *   The form structure.
- * @param $form_state
+ * @param array $form_state
  *   The form state.
- * @param $type
+ * @param string $type
  *   The node type (bundle).
- * @param $field
+ * @param string $field
  *   The field name.
+ *
  * @return array
+ *   Form structure.
  */
 function islandora_sync_field_settings_form($form, $form_state, $type, $field) {
   $type = str_replace('-', '_', $type);
@@ -222,7 +224,7 @@ function islandora_sync_field_settings_form($form, $form_state, $type, $field) {
   }
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Submit'),
+    '#value' => t('Save Field Settings'),
   );
   return $form;
 }
