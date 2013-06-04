@@ -216,7 +216,7 @@ function islandora_sync_field_settings_form_validate($form, &$form_state) {
         array(':dsid' => $dsid)
       )->fetchField();
     if (empty($field)) {
-      form_set_error('dsid', "No XML value defined for the $dsid datastream!");
+      form_set_error('dsid', t('No XML value defined for the @ds datastream!', array('ds' => $dsid)));
     }
   }
 }
