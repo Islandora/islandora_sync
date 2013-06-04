@@ -127,12 +127,12 @@ function islandora_sync_xml_ds_add_namespace_add($form, &$form_state) {
 }
 
 function islandora_sync_xml_ds_add_validate($form, &$form_state) {
-  if (isset($form_state['values']['ds_id_update']) && !$form_state['values']['ds_id_update']) {
+  if (!isset($form_state['values']['ds_id_update'])) {
     $dsid_exists = db_query('SELECT 1 FROM {islandora_sync_xml_ds} WHERE ds_id = :ds_id',
       array('ds_id' => $form_state['values']['ds_id'])  //@TODO: handle ds_id case
     )->fetchAll();
     if ($dsid_exists) {
-      form_set_error('ds_id', t('This datastream already exists.'));
+      form_set_error('ds_id', t('An entry for the @ds datastream already exists!.', array('@ds' => $form_state['values']['ds_id'])));
     }
   }
 }
