@@ -1,5 +1,23 @@
 <?php
 
+/**
+ * @file
+ * Islandora Sync bundle settings form.
+ */
+
+/**
+ * Islandora Sync specific settings form per node bundle (type).
+ *
+ * @param array $form
+ *   Form structure.
+ * @param array $form_state
+ *   The form state.
+ * @param string $bundle
+ *   The bundle being modified.
+ *
+ * @return array
+ *   Form structure.
+ */
 function islandora_sync_bundle_settings_form($form, $form_state, $bundle) {
   $form = array();
   $bundle = str_replace('-', '_', $bundle);
@@ -146,11 +164,14 @@ function islandora_sync_bundle_settings_form($form, $form_state, $bundle) {
 
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Submit'),
+    '#value' => t('Save Type Settings'),
   );
   return $form;
 }
 
+/**
+ * Form validation.
+ */
 function islandora_sync_bundle_settings_form_validate($form, &$form_state) {
   $values = $form_state['values'];
   module_load_include('inc', 'islandora', 'includes/utilities');
@@ -159,7 +180,7 @@ function islandora_sync_bundle_settings_form_validate($form, &$form_state) {
     form_set_error('namespace', t('Please enter a valid namespace'));
   }
 
-  // Require a content model if syncing from Fedora
+  // Require a content model if syncing from Fedora.
   if ($values['sync_fedora'] && is_null($values['cmodel'])) {
     form_set_error('cmodel', t('Content model is required.'));
   }
@@ -173,6 +194,9 @@ function islandora_sync_bundle_settings_form_validate($form, &$form_state) {
   }
 }
 
+/**
+ * Form submit.
+ */
 function islandora_sync_bundle_settings_form_submit($form, $form_state) {
   $record = $form_state['values'];
   $record['entity_type'] = 'node';
@@ -186,17 +210,17 @@ function islandora_sync_bundle_settings_form_submit($form, $form_state) {
 
   $existing_cmodels = islandora_sync_get_bundle_cmodels($record['bundle']);
 
-  // Insert new cmodels
-  foreach (array($form_state['values']['cmodel']) AS $cmodel) {
+  // Insert new cmodels.
+  foreach (array($form_state['values']['cmodel']) as $cmodel) {
     if (!in_array($cmodel, $existing_cmodels)) {
       $cmodel_record = array('bundle' => $record['bundle'], 'cmodel' => $cmodel);
       drupal_write_record('islandora_sync_type_cmodel', $cmodel_record);
     }
   }
 
-  // Delete cmodels
+  // Delete cmodels.
   $deleted_cmodels = array_diff($existing_cmodels, array($form_state['values']['cmodel']));
-  foreach ($deleted_cmodels AS $deleted) {
+  foreach ($deleted_cmodels as $deleted) {
     db_query('DELETE FROM {islandora_sync_type_cmodel} WHERE bundle = :bundle AND cmodel = :cmodel',
       array(':bundle' => $record['bundle'], ':cmodel' => $deleted)
     );

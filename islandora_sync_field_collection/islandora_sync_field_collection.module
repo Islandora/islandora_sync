@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Integration of field_collection and islandora_sync.
+ */
+
+/**
  * Implements islandora_sync_node_field_build().
  */
 function islandora_sync_field_collection_islandora_sync_node_field_build($node, $object, $field, $ds_id) {
@@ -16,7 +21,7 @@ function islandora_sync_field_collection_islandora_sync_node_field_build($node, 
 
     $values = array();
     foreach ($child_fields as $child_field_name => $child_field_info) {
-      $values[$child_field_name] = islandora_sync_get_field_values($child_field_info, $object, array($child_field_info->bundle));
+      $values[$child_field_name] = islandora_sync_get_field_values($child_field_info, $object, $node->type, array($child_field_info->bundle));
     }
 
     $collection_count = 0;
@@ -33,7 +38,7 @@ function islandora_sync_field_collection_islandora_sync_node_field_build($node, 
 
     for ($i = 0; $i < $existing_collection_count; $i++) {
       $id = $node->{$field->field}[$node->language][$i]['value'];
-      //@TODO: batch for delete multiple
+      // @TODO: batch for delete multiple.
       entity_delete('field_collection_item', $id);
     }
     $node->{$field->field} = array();
@@ -53,5 +58,4 @@ function islandora_sync_field_collection_islandora_sync_node_field_build($node, 
     }
     return TRUE;
   }
-
 }

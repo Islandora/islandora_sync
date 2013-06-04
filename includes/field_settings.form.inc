@@ -1,5 +1,25 @@
 <?php
 
+/**
+ * @file
+ * Field settings form.
+ */
+
+/**
+ * Field settings form for Islandora Sync.
+ *
+ * @param array $form
+ *   The form structure.
+ * @param array $form_state
+ *   The form state.
+ * @param string $type
+ *   The node type (bundle).
+ * @param string $field
+ *   The field name.
+ *
+ * @return array
+ *   Form structure.
+ */
 function islandora_sync_field_settings_form($form, $form_state, $type, $field) {
   $type = str_replace('-', '_', $type);
   $field_settings = islandora_sync_get_field_settings($type, $field);
@@ -204,11 +224,14 @@ function islandora_sync_field_settings_form($form, $form_state, $type, $field) {
   }
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Submit'),
+    '#value' => t('Save Field Settings'),
   );
   return $form;
 }
 
+/**
+ * Form validation.
+ */
 function islandora_sync_field_settings_form_validate($form, &$form_state) {
   if ($form_state['values']['export_type'] == 'xml_value') {
     $dsid = $form_state['values']['dsid'];
@@ -221,17 +244,19 @@ function islandora_sync_field_settings_form_validate($form, &$form_state) {
   }
 }
 
-//@TODO: clear fieldset values when parent checkbox is not checked, to avoid values getting stored
+/**
+ * Form submit.
+ */
 function islandora_sync_field_settings_form_submit($form, $form_state) {
   $values = $form_state['values'];
 
-  // Update settings
+  // Update settings.
   if (!$values['settings']->new) {
     unset($values['settings']);
     drupal_write_record('islandora_sync_fields', $values, array('bundle', 'field'));
   }
   else {
-    // Insert settings
+    // Insert settings.
     unset($values['settings']);
     drupal_write_record('islandora_sync_fields', $values);
   }

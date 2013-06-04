@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * @file
+ * Contains install and update functions.
+ */
+
+/**
+ * Implements hook_schema().
+ */
 function islandora_sync_schema() {
   $schema['islandora_sync_fields'] = array(
     'description' => 'Track Fedora Commons export field settings',
@@ -172,7 +180,7 @@ function islandora_sync_schema() {
       'cmodel' => array(
         'type' => 'varchar',
         'length' => 128,
-      )
+      ),
     ),
   );
   $schema['islandora_sync_xml_ds'] = array(

@@ -1,5 +1,19 @@
 <?php
 
+/**
+ * @file
+ * Collection of functions for exporting Drupal content to Fedora Commons.
+ * Currently incomplete.
+ */
+
+/**
+ * Export to Fedora Commons from a Drupal node.
+ *
+ * @param stdObject $node
+ *   The node to sync to Fedora.
+ * @param stdObject $type_info
+ *   The islandora_sync settings for this content type (bundle).
+ */
 function islandora_sync_export_from_node($node, $type_info) {
   module_load_include('inc', 'islandora', 'includes/utilities');
   $cmodels = islandora_sync_get_bundle_cmodels($type_info->bundle);
@@ -22,11 +36,18 @@ function islandora_sync_export_from_node($node, $type_info) {
     $ds->setContentFromString($datastream['content']);
     $object->ingestDatastream($ds);
   }
-  // Log state of sync
-
-  watchdog('mitch', 'Created object ' . $object->id);
+  // Log state of sync.
 }
 
+/**
+ * Construct the Fedora object's datastreams.
+ *
+ * @param stdObject $node
+ *   The node to sync.
+ *
+ * @return array
+ *   Pseudo-datastream structure.
+ */
 function islandora_sync_build_datastreams($node) {
   $fields = db_query("SELECT * FROM {islandora_sync_fields} WHERE bundle = :bundle AND export = 1",
     array(':bundle' => $node->type)
@@ -34,7 +55,8 @@ function islandora_sync_build_datastreams($node) {
 
   $datastreams = array();
   foreach ($fields as $field) {
-    $values = field_get_items('node', $node, $field->field); //@TODO: proper language handling
+    // @TODO: proper language handling.
+    $values = field_get_items('node', $node, $field->field);
     if ($values) {
       $dsid = $field->dsid;
       if (!isset($datastreams[$dsid])) {
@@ -50,6 +72,19 @@ function islandora_sync_build_datastreams($node) {
   return $datastreams;
 }
 
+/**
+ * Build the content of a datastream.
+ *
+ * @param string $content
+ *   The field content.
+ * @param string $node_field
+ *   The fie
+ * @param stdObject $field_info
+ *   The field info from islandora_sync_fields.
+ *
+ * @return string
+ *   The content.
+ */
 function islandora_sync_build_ds_content($content, $node_field, $field_info) {
   switch ($field_info->export_type) {
     case 'xml_value':
@@ -65,6 +100,15 @@ function islandora_sync_build_ds_content($content, $node_field, $field_info) {
   return $content;
 }
 
+/**
+ * Create the initial XML document.
+ *
+ * @param stdObject $field_info
+ *   The field info from islandora_sync_fields.
+ *
+ * @return string
+ *   The XML content.
+ */
 function islandora_sync_init_xml_datastream($field_info) {
   $ds_info = db_query('SELECT * FROM {islandora_sync_xml_ds} WHERE ds_id = :ds_id',
     array('ds_id' => $field_info->dsid)
@@ -84,9 +128,23 @@ function islandora_sync_init_xml_datastream($field_info) {
   }
 
   $doc->appendChild($root);
-  return $doc->saveXML(); // @TODO: pass around DOMDocument rather than string
+  // @TODO: pass around DOMDocument rather than string
+  return $doc->saveXML();
 }
 
+/**
+ * Populate an XML document with elements.
+ *
+ * @param string $content
+ *   The XML content as string.
+ * @param string $node_field_value
+ *   The field value.
+ * @param stdObject $field_info
+ *   Field info from islandora_sync_fields.
+ *
+ * @return string
+ *   The XML content.
+ */
 function islandora_sync_build_xml_datastream($content, $node_field_value, $field_info) {
   $xml_doc = new DOMDocument();
   $xml_doc->loadXML($content);
@@ -101,7 +159,8 @@ function islandora_sync_build_xml_datastream($content, $node_field_value, $field
         $path = $path_part[$i];
         $value = NULL;
         if (empty($current_path)) {
-          $current_path .= '/'; //@TODO: check if XML root has been provided if document context
+          // @TODO: check if XML root has been provided if document context.
+          $current_path .= '/';
         }
         if ($i == ($part_count - 1)) {
           $value = $node_field_value;
@@ -110,7 +169,7 @@ function islandora_sync_build_xml_datastream($content, $node_field_value, $field
         $current_path = $current_path . $path;
         $xpath = $dom_xpath->query($current_path);
         if (!$xpath->length) {
-          // Need to create
+          // Need to create.
           $namespaced = explode(':', $path);
           if (count($namespaced) > 1) {
             $ns_uri = _get_ns_uri($namespaced[0]);
@@ -120,7 +179,7 @@ function islandora_sync_build_xml_datastream($content, $node_field_value, $field
             $new_element = $xml_doc->createElement($path, $value);
           }
           if ($i > 0 && !is_null($parent)) {
-            //@TODO: parent vs doc
+            // @TODO: parent vs doc.
             $parent->appendChild($new_element);
           }
           else {
@@ -130,9 +189,10 @@ function islandora_sync_build_xml_datastream($content, $node_field_value, $field
         }
       }
       break;
-    case 'attribute':
 
+    case 'attribute':
       break;
+
     case 'xml':
       $value = $field_info->create_value;
       $value = str_replace('%value%', $node_field_value, $value);
@@ -145,6 +205,15 @@ function islandora_sync_build_xml_datastream($content, $node_field_value, $field
   return $content;
 }
 
+/**
+ * Get the uri for a namespace.
+ *
+ * @param string $namespace
+ *   The namespace to lookup.
+ *
+ * @return string
+ *   The namespace URI.
+ */
 function _get_ns_uri($namespace) {
   $ns = db_query("SELECT uri FROM {islandora_sync_xml_ds_namespaces} WHERE prefix = :prefix",
     array(':prefix' => $namespace)
