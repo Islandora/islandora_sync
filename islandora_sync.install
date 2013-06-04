@@ -303,3 +303,10 @@ function islandora_sync_schema() {
   );
   return $schema;
 }
+
+/**
+ * Implements hook_install().
+ */
+function islandora_sync_install() {
+  drupal_mkdir('public://islandora_sync');
+}
