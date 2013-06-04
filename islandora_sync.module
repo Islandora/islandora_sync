@@ -245,7 +245,6 @@ function islandora_sync_update_from_fedora(FedoraObject $object, $ds_id = NULL) 
     islandora_sync_import_from_pid($object->id, $bundle_info->bundle, $nid, $ds_id);
   }
   elseif ($bundle_info) {
-    // @TODO: limit queue to 1 op/object.
     islandora_sync_queue_operation(
       $object->id,
       $bundle_info->entity_type,
