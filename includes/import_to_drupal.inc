@@ -98,7 +98,7 @@ function islandora_sync_build_node_fields(&$node, $object, $ds_id) {
     $return = module_invoke_all('islandora_sync_node_field_build', $node, $object, $field, $ds_id);
 
     if (!$return) {
-      $values = islandora_sync_get_field_values($field, $object);
+      $values = islandora_sync_get_field_values($field, $object, $node->type, array());
       $existing_title = $node->title;
       $node->{$field->field} = array();
       $node->title = $existing_title;
@@ -125,13 +125,15 @@ function islandora_sync_build_node_fields(&$node, $object, $ds_id) {
  *   Field object record as stored in islandora_sync_fields table.
  * @param AbstractObject $object
  *   The Fedora object containing values.
+ * @param string $bundle
+ *   The bundle (node type).
  * @param array $parents
  *   Parent field names.
  *
  * @return array
  *   An array containing the field values.
  */
-function islandora_sync_get_field_values($field, $object, $parents = array()) {
+function islandora_sync_get_field_values($field, $object, $bundle, $parents = array()) {
   $values = array();
 
   switch ($field->export_type) {
@@ -153,7 +155,7 @@ function islandora_sync_get_field_values($field, $object, $parents = array()) {
         array(':field' => $field->field, ':bundle' => $field->bundle)
       )->fetchField();
       if ($field->read_context == 'parent') {
-        $parent_path = islandora_sync_get_parent_path($field, $parents);
+        $parent_path = islandora_sync_get_parent_path($field, $bundle, $parents);
         $read_path .= $parent_path;
         if ($field_path) {
           $read_path .= '/' . $field_path;
@@ -274,21 +276,25 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
  *
  * @param stdObject $field
  *   Field object record as stored in islandora_sync_fields table.
+ * @param string $bundle
+ *   The node's bundle.
  * @param array $parents
  *   Known parents.
  *
  * @return string
  *   The path to parent field.
  */
-function islandora_sync_get_parent_path($field, $parents = array()) {
+function islandora_sync_get_parent_path($field, $bundle, $parents = array()) {
   $path = '';
   $parents = islandora_sync_get_parent_fields($field->field, $field->bundle, $parents);
 
   $parents = array_reverse($parents);
   foreach ($parents as $parent) {
-    // @TODO: field could belong to multiple bundles, query with bundle
-    $field_read = db_query("SELECT read_path, read_context FROM {islandora_sync_fields} WHERE field = :field",
-      array(':field' => $parent)
+    $field_read = db_query("SELECT read_path, read_context
+      FROM {islandora_sync_fields}
+      WHERE field = :field
+      AND bundle = :bundle",
+      array(':field' => $parent, ':bundle' => $bundle)
     )->fetchObject();
     if ($field_read && $field_read->read_path != $path) {
       if ($field_read->read_context == 'parent') {
@@ -316,21 +322,12 @@ function islandora_sync_get_parent_path($field, $parents = array()) {
  *
  * @return array
  *   All parent fields.
- *
- * @TODO: make recursive
  */
 function islandora_sync_get_parent_fields($field, $bundle, $parents) {
   $start_count = count($parents);
-  $field_info = field_info_instance('node', $field, $bundle);
 
-  // Is part of field_collection? has to be a better way to do this
-  // entity_type == field_collection_item ?? in field_config_instance
-  // check if module exists?
-  if ($field_info['widget']['module'] == 'field_collection') {
+  if (module_exists('field_group')) {
 
-  }
-  elseif (module_exists('field_group')) {
-    // Could be disabled. Is part of field_group? This is also terrible.
     ctools_include('export');
     $groups = ctools_export_load_object('field_group', 'conditions', array(
       'entity_type' => 'node',
