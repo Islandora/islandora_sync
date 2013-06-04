@@ -209,9 +209,16 @@ function islandora_sync_field_settings_form($form, $form_state, $type, $field) {
   return $form;
 }
 
-//@TODO: validate that DS has been setup
 function islandora_sync_field_settings_form_validate($form, &$form_state) {
-
+  if ($form_state['values']['export_type'] == 'xml_value') {
+    $dsid = $form_state['values']['dsid'];
+    $field = db_query("SELECT ds_id FROM {islandora_sync_xml_ds} WHERE ds_id = :dsid",
+        array(':dsid' => $dsid)
+      )->fetchField();
+    if (empty($field)) {
+      form_set_error('dsid', t('No XML value defined for the @ds datastream!', array('ds' => $dsid)));
+    }
+  }
 }
 
 //@TODO: clear fieldset values when parent checkbox is not checked, to avoid values getting stored
