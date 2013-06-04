@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * @file
+ * Features integration; hooks used to build and process islandora_sync feature components.
+ */
+
+
 function islandora_sync_field_datastreams_features_export($data, &$export, $module_name) {
   foreach ($data as $component) {
     $export['features']['islandora_sync_field_datastreams'][$component] = $component;

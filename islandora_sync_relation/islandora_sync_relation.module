@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Integration of relation and islandora_sync.
+ */
+
+/**
  * Implements islandora_sync_node_field_build().
  */
 function islandora_sync_relation_islandora_sync_node_field_build($node, $object, $field) {

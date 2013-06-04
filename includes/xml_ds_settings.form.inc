@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * XML datastream settings form.
+ */
+
 function islandora_sync_xml_ds_page() {
   $datastreams = db_query('SELECT * FROM {islandora_sync_xml_ds}')->fetchAll();
 

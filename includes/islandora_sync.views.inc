@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * Expose Islandora Sync database tables to views.
+ */
+
 function islandora_sync_views_data() {
   $data = array();
   $data['islandora_sync_map']['table']['group'] = t('Islandora');

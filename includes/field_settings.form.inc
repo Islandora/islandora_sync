@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * Field settings form.
+ */
+
 function islandora_sync_field_settings_form($form, $form_state, $type, $field) {
   $type = str_replace('-', '_', $type);
   $field_settings = islandora_sync_get_field_settings($type, $field);

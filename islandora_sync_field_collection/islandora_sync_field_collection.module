@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Integration of field_collection and islandora_sync.
+ */
+
+/**
  * Implements islandora_sync_node_field_build().
  */
 function islandora_sync_field_collection_islandora_sync_node_field_build($node, $object, $field, $ds_id) {

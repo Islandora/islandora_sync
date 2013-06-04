@@ -264,6 +264,8 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
  *
  * @param $field
  *   Field object record as stored in islandora_sync_fields table.
+ * @param $bundle
+ *   The node's bundle.
  * @param array $parents
  *   Known parents.
  * @return string
@@ -294,20 +296,21 @@ function islandora_sync_get_parent_path($field, $bundle, $parents = array()) {
   return $path;
 }
 
-//@TODO: make recursive
+/**
+ * Get a field's parent field. Used for nested fields such as field_group children.
+ *
+ * @param $field
+ *   Field object record as stored in islandora_sync_fields table.
+ * @param $bundle
+ *   The parent node's bundle.
+ * @param $parents
+ *   Array of known parents
+ * @return array
+ */
 function islandora_sync_get_parent_fields($field, $bundle, $parents) {
   $start_count = count($parents);
-  $field_info = field_info_instance('node', $field, $bundle);
 
-  // is part of field_collection? has to be a better way to do this
-  // entity_type == field_collection_item ?? in field_config_instance
-  // check if module exists?
-  if ($field_info['widget']['module'] == 'field_collection') {
-
-  }
-  elseif (module_exists('field_group')) { // could be disabled
-    // is part of field_group?
-    // this is also terrible
+  if (module_exists('field_group')) {
     ctools_include('export');
     $groups = ctools_export_load_object('field_group', 'conditions', array(
       'entity_type' => 'node',

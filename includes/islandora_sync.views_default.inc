@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Expose views provided in code to the views module.
+ */
+
+/**
  * Implements hook_views_default_views().
  */
 function islandora_sync_views_default_views() {
