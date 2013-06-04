@@ -145,7 +145,7 @@ function islandora_sync_get_field_values($field, $object, $bundle, $parents = ar
         array(':field' => $field->field, ':bundle' => $field->bundle)
       )->fetchField();
       if ($field->read_context == 'parent') {
-        $parent_path = islandora_sync_get_parent_path($field, $parents, $bundle);
+        $parent_path = islandora_sync_get_parent_path($field, $bundle, $parents);
         $read_path .= $parent_path;
         if ($field_path) {
           $read_path .= '/' . $field_path;
@@ -268,14 +268,16 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
  *   Known parents.
  * @return string
  */
-function islandora_sync_get_parent_path($field, $parents = array(), $bundle) {
+function islandora_sync_get_parent_path($field, $bundle, $parents = array()) {
   $path = '';
   $parents = islandora_sync_get_parent_fields($field->field, $field->bundle, $parents);
 
   $parents = array_reverse($parents);
   foreach ($parents as $parent) {
-    // @TODO: field could belong to multiple bundles, query with bundle
-    $field_read = db_query("SELECT read_path, read_context FROM {islandora_sync_fields} WHERE field = :field AND bundle = :bundle",
+    $field_read = db_query("SELECT read_path, read_context
+      FROM {islandora_sync_fields}
+      WHERE field = :field
+      AND bundle = :bundle",
       array(':field' => $parent, ':bundle' => $bundle)
     )->fetchObject();
     if ($field_read && $field_read->read_path != $path) {
