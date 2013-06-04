@@ -15,7 +15,9 @@ function islandora_sync_import_from_pid($pid, $type, $nid = FALSE, $ds_id = NULL
     $node->log = 'Updated by islandora_sync';
   }
 
-  $node->title = $object->label;
+  if (!isset($node->title)) {
+    $node->title = $object->label;
+  }
 
   $author = user_load_by_name($object->owner);
   if ($author) {
@@ -33,7 +35,7 @@ function islandora_sync_import_from_pid($pid, $type, $nid = FALSE, $ds_id = NULL
   node_save($node);
 
   if (!$nid) {
-    $map['pid'] = $object->id;
+    $map['pid'] = $pid;
     $map['type'] = 'node';
     $map['bundle'] = $type;
     $map['entity_id'] = $node->nid;
@@ -74,7 +76,7 @@ function islandora_sync_build_node_fields(&$node, $object, $ds_id) {
         }
       }
       else {
-        if (isset($values[0])) {
+        if (isset($values[0]) && $values[0] != $node->title) {
           $node->title = $values[0];
         }
       }
@@ -172,7 +174,7 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
       $mime_detect = new MimeDetect();
       $extension = $mime_detect->getExtension($value['mimetype']);
       $file_name = $field_info->dsid . '-' . $entity->type . '-' . $id . '.' . $extension;
-      $file = file_save_data($value['content'], 'public://' . $file_name, FILE_EXISTS_RENAME);
+      $file = file_save_data($value['content'], 'public://' . $file_name, FILE_EXISTS_REPLACE);
       $file->display = 1;
       $prepared_field[] = (array) $file;
       break;
