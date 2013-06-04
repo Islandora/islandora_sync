@@ -125,14 +125,11 @@ function islandora_sync_build_node_fields(&$node, $object, $ds_id) {
  *   Field object record as stored in islandora_sync_fields table.
  * @param AbstractObject $object
  *   The Fedora object containing values.
+ * @param string $bundle
+ *   The bundle (node type).
  * @param array $parents
  *   Parent field names.
-<<<<<<< HEAD
- * @param $bundle
- *   The bundle (node type).
-=======
  *
->>>>>>> f7f24570caebc6521b30d580e389779f312a450d
  * @return array
  *   An array containing the field values.
  */
