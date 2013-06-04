@@ -1,5 +1,24 @@
 <?php
 
+/**
+ * @file
+ * Collection of functions related to importing Fedora content to Drupal.
+ */
+
+/**
+ * Point of entry in the process of creating/updating Drupal nodes based on a Fedora PID.
+ *
+ * @param $pid
+ *   Fedora object pid.
+ * @param $type
+ *   Drupal bundle type (node type).
+ * @param $nid
+ *   Drupal node ID, use for content updates.
+ * @param $ds_id
+ *   The Fedora object datastream ID, use to limit the scope of a content update.
+ * @return int
+ *   Node ID of created/updated Drupal node.
+ */
 function islandora_sync_import_from_pid($pid, $type, $nid = FALSE, $ds_id = NULL) {
   $object = islandora_object_load($pid);
 
@@ -11,7 +30,7 @@ function islandora_sync_import_from_pid($pid, $type, $nid = FALSE, $ds_id = NULL
   }
   else {
     $node = node_load($nid);
-    $node->revision = 1; // Is this good, many revisions seem to be created
+    $node->revision = 1;
     $node->log = 'Updated by islandora_sync';
   }
 
@@ -26,11 +45,12 @@ function islandora_sync_import_from_pid($pid, $type, $nid = FALSE, $ds_id = NULL
   else {
     $node->uid = 1;
   }
-  // Call node_save to get a nid
+  // Call node_save to get a nid if it doesn't exist.
   if (!$nid) {
     node_save($node);
   }
 
+  // Populate the node's fields.
   islandora_sync_build_node_fields($node, $object, $ds_id);
   node_save($node);
 
@@ -45,31 +65,37 @@ function islandora_sync_import_from_pid($pid, $type, $nid = FALSE, $ds_id = NULL
   return $node->nid;
 }
 
+/**
+ * Populate a node's fields based on mappings of Fedora content to Drupal.
+ *
+ * @param $node
+ *   The node object that is being updated.
+ * @param $object
+ *   The Fedora object being synced to Drupal.
+ * @param $ds_id
+ *   The Fedora object datastream ID.
+ */
 function islandora_sync_build_node_fields(&$node, $object, $ds_id) {
-  if (is_null($ds_id)) {
-    $fields_to_populate = db_query("SELECT fcef.*, fc.type FROM {islandora_sync_fields} fcef
-    LEFT JOIN {field_config} fc ON fc.field_name = fcef.field
-    WHERE fcef.bundle = :bundle",
-      array(':bundle' => $node->type)
-    )->fetchAll();
+  $fields_to_populate_query = db_select('islandora_sync_fields', 'isf');
+  $fields_to_populate_query->leftJoin('field_config', 'fc', 'fc.field_name = isf.field');
+  $fields_to_populate_query->fields('isf')
+    ->fields('fc', array('type'))
+    ->condition('isf.bundle', $node->type, '=');
+
+  if (!is_null($ds_id)) {
+    $fields_to_populate_query->condition('isf.dsid', $ds_id, '=');
   }
-  else {
-    $fields_to_populate = db_query("SELECT fcef.*, fc.type FROM {islandora_sync_fields} fcef
-    LEFT JOIN {field_config} fc ON fc.field_name = fcef.field
-    WHERE fcef.bundle = :bundle
-    AND fcef.dsid = :ds_id",
-      array(':bundle' => $node->type, ':ds_id' => $ds_id)
-    )->fetchAll();
-  }
+
+  $fields_to_populate = $fields_to_populate_query->execute()->fetchAll();
 
   foreach ($fields_to_populate as $field) {
     $return = module_invoke_all('islandora_sync_node_field_build', $node, $object, $field, $ds_id);
 
     if (!$return) {
-      $values = get_field_values($field, $object);
+      $values = islandora_sync_get_field_values($field, $object);
       $existing_title = $node->title;
       $node->{$field->field} = array();
-      $node->title = $existing_title; // Want to make sure we keep a title?
+      $node->title = $existing_title;
       if ($field->field != 'title') {
         foreach ($values as $value) {
           islandora_sync_save_field($field, $node, $value);
@@ -84,7 +110,18 @@ function islandora_sync_build_node_fields(&$node, $object, $ds_id) {
   }
 }
 
-function get_field_values($field, $object, $parents = array()) {
+/**
+ * Extract content from Fedora data structures based on mappings to Drupal fields.
+ *
+ * @param $field
+ *   Field object record as stored in islandora_sync_fields table.
+ * @param $object
+ *   The Fedora object containing values.
+ * @param array $parents
+ *   Parent field names.
+ * @return array
+ */
+function islandora_sync_get_field_values($field, $object, $parents = array()) {
   $values = array();
 
   switch ($field->export_type) {
@@ -121,7 +158,6 @@ function get_field_values($field, $object, $parents = array()) {
         if (is_object($object[$field->dsid])) {
           $ds_content = $object[$field->dsid]->content;
         }
-
       }
       catch (Exception $e) {
 
@@ -144,7 +180,11 @@ function get_field_values($field, $object, $parents = array()) {
     case 'managed_datastream':
       try {
         if (is_object($object[$field->dsid])) {
-          $values[] = array('content' => $object[$field->dsid]->content, 'mimetype' => $object[$field->dsid]->mimetype);  //@TODO: stream to get around memory constraints?
+          // @TODO: check for memory problems.
+          $values[] = array(
+            'content' => $object[$field->dsid]->content,
+            'mimetype' => $object[$field->dsid]->mimetype,
+          );
         }
       }
       catch (Exception $e) {
@@ -163,6 +203,16 @@ function get_field_values($field, $object, $parents = array()) {
   return $values;
 }
 
+/**
+ * Format a node's field structure for saving. This is only for core module fields.
+ *
+ * @param $field_info
+ *   Field object record as stored in islandora_sync_fields table.
+ * @param $entity
+ *   The entity (node) being populated.
+ * @param $value
+ *   The field value.
+ */
 function islandora_sync_save_field($field_info, &$entity, $value) {
   $lang = isset($entity->language) ? $entity->language : LANGUAGE_NONE;
   $id = isset($entity->nid) ? $entity->nid : user_password();
@@ -207,6 +257,15 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
   }
 }
 
+/**
+ * Get the parent field path of a field.
+ *
+ * @param $field
+ *   Field object record as stored in islandora_sync_fields table.
+ * @param array $parents
+ *   Known parents.
+ * @return string
+ */
 function islandora_sync_get_parent_path($field, $parents = array()) {
   $path = '';
   $parents = islandora_sync_get_parent_fields($field->field, $field->bundle, $parents);
@@ -229,7 +288,6 @@ function islandora_sync_get_parent_path($field, $parents = array()) {
   }
 
   return $path;
-
 }
 
 //@TODO: make recursive
