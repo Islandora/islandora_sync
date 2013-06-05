@@ -10,9 +10,7 @@ CONTENTS OF THIS FILE
 SUMMARY
 -------
 
-Islandora Sync enables event-based synchronization of content between Fedora Commons and Drupal.
-Fedora content models may be mapped to Drupal node types and Fedora datastreams and their XML contents
-to Drupal fields.
+Islandora Sync enables event-based synchronization of content between Fedora Commons and Drupal. Fedora content models may be mapped to Drupal node types and Fedora datastreams and their XML contents to Drupal fields. A more in-depth overview of the module's use and configuration can be found at https://github.com/discoverygarden/islandora_sync/wiki/Islandora-Sync-Use-and-Configuration
 
 REQUIREMENTS
 ------------
@@ -25,11 +23,8 @@ INSTALLATION
 ------------
 
 Download and enable module.
-Islandora Sync Relation provides integration with the Relation module
-(www.drupal.org/project/relation) for syncing Fedora object to object relationships as Drupal
-node to node relationships.
-Islandora Sync Field Collection integrates with the Field Collection module to allow for
-repeating groups of fields, similar to tabs of Islandora XML Forms.
+Islandora Sync Relation provides integration with the Relation module (www.drupal.org/project/relation) for syncing Fedora object to object relationships as Drupalnode to node relationships.
+Islandora Sync Field Collection integrates with the Field Collection module to allow for repeating groups of fields, similar to tabs of Islandora XML Forms.
 
 CONFIGURATION
 -------------
