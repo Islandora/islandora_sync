@@ -74,19 +74,26 @@ function islandora_sync_permission() {
  * Implements hook_islandora_object_ingested().
  */
 function islandora_sync_islandora_object_ingested(FedoraObject $object) {
-  $bundle_info = db_query("SELECT * FROM {islandora_sync_type_settings} ists
-    INNER JOIN {islandora_sync_type_cmodel} istc ON istc.bundle = ists.bundle
-    WHERE istc.cmodel IN (:models)
-    AND ists.sync_drupal = 1
-    AND ists.sync_drupal_create", array(':models' => $object->models)
-  )->fetchObject();
-
-  if ($bundle_info && $bundle_info->sync_drupal_timing == 'real_time') {
-    module_load_include('inc', 'islandora_sync', 'includes/import_to_drupal');
-    islandora_sync_import_from_pid($object->id, $bundle_info->bundle);
+  $obj_ids = &drupal_static(__FUNCTION__);
+  if (!is_array($obj_ids)) {
+    $obj_ids = array();
   }
-  elseif ($bundle_info) {
-    islandora_sync_queue_operation($object->id, $bundle_info->entity_type, $bundle_info->bundle, 'sync_drupal');
+  if (!islandora_sync_get_nid_from_pid($object->id) && !in_array($object->id, $obj_ids)) {
+    $obj_ids[] = $object->id;
+    $bundle_info = db_query("SELECT * FROM {islandora_sync_type_settings} ists
+      INNER JOIN {islandora_sync_type_cmodel} istc ON istc.bundle = ists.bundle
+      WHERE istc.cmodel IN (:models)
+      AND ists.sync_drupal = 1
+      AND ists.sync_drupal_create = 1", array(':models' => $object->models)
+    )->fetchObject();
+
+    if ($bundle_info && $bundle_info->sync_drupal_timing == 'real_time') {
+      module_load_include('inc', 'islandora_sync', 'includes/import_to_drupal');
+      islandora_sync_import_from_pid($object->id, $bundle_info->bundle);
+    }
+    elseif ($bundle_info) {
+      islandora_sync_queue_operation($object->id, $bundle_info->entity_type, $bundle_info->bundle, 'sync_drupal');
+    }
   }
 }
 
@@ -233,7 +240,7 @@ function islandora_sync_update_from_fedora(FedoraObject $object, $ds_id = NULL) 
     INNER JOIN {islandora_sync_type_cmodel} istc ON istc.bundle = ists.bundle
     WHERE istc.cmodel IN (:models)
     AND ists.sync_drupal = 1
-    AND ists.sync_drupal_update", array(':models' => $object->models)
+    AND ists.sync_drupal_update = 1", array(':models' => $object->models)
   )->fetchObject();
 
   $nid = db_query("SELECT entity_id FROM {islandora_sync_map} WHERE pid = :pid",
@@ -493,8 +500,12 @@ function islandora_sync_node_delete($node) {
     $removal_files = file_scan_directory($node_path, '/(.*)/');
 
     foreach ($removal_files as $file) {
+      $file = (object) $file;
+      $file->fid = db_query("SELECT fid FROM {file_managed} WHERE uri = :uri",
+        array(':uri' => $file->uri)
+      )->fetchField();
       @file_delete($file);
     }
-    drupal_rmdir($node_path);
+    @drupal_rmdir($node_path);
   }
 }
