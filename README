@@ -6,6 +6,7 @@ CONTENTS OF THIS FILE
  * installation
  * configuration
  * troubleshooting
+ * sponsors
 
 SUMMARY
 -------
@@ -40,3 +41,8 @@ TROUBLESHOOTING
 
 A Drupal issue may present problems when syncing managed datastreams from Fedora to Drupal, see
 http://drupal.org/node/1443158 for a patch.
+
+SPONSORS
+--------
+
+Development for Islandora Sync sponsored by UCLA Library.
