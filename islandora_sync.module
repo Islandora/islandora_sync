@@ -231,7 +231,7 @@ function islandora_sync_cron() {
         break;
 
       case 'delete_drupal':
-        entity_delete($item->type, $item->entity_id);
+        node_delete($item->entity_id);
         db_delete('islandora_sync_map')->condition('pid', $item->pid)->execute();
         break;
 
