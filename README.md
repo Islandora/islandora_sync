@@ -26,7 +26,7 @@ Islandora Sync Field Collection integrates with the Field Collection module to a
 
 Node type mappings to Fedora content models and related settings may be configured at
 /admin/structure/types/manage/<node_bundle_machine_name>/fedora
-To sync XML datastreams, XML configuration is done at /admin/islandora/sync/xml-datastreams/
+To sync XML datastreams, XML configuration is done at /admin/islandora/tools/sync/xml-datastreams/
 
 Features integration is provided to allow for programmatic deployment of configurations.
 

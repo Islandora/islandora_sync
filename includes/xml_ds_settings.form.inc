@@ -16,8 +16,8 @@ function islandora_sync_xml_ds_page() {
   foreach ($datastreams as $datastream) {
     $rows[] = array(
       check_plain($datastream->ds_id),
-      l(t('Edit'), "admin/islandora/sync/xml-datastreams/$datastream->ds_id/edit"),
-      l(t('Delete'), "admin/islandora/sync/xml-datastreams/$datastream->ds_id/delete"),
+      l(t('Edit'), "admin/islandora/tools/sync/xml-datastreams/$datastream->ds_id/edit"),
+      l(t('Delete'), "admin/islandora/tools/sync/xml-datastreams/$datastream->ds_id/delete"),
     );
   }
 
@@ -199,7 +199,7 @@ function islandora_sync_xml_ds_add_submit($form, &$form_state) {
     }
   }
   drupal_set_message(t('Datastream settings saved'));
-  $form_state['redirect'] = 'admin/islandora/sync/xml-datastreams';
+  $form_state['redirect'] = 'admin/islandora/tools/sync/xml-datastreams';
 }
 
 /**
@@ -221,7 +221,7 @@ function islandora_sync_xml_ds_delete($form, $form_state, $ds_id) {
     '#type' => 'value',
     '#value' => $ds_id,
   );
-  return confirm_form($form, $confirm_text, 'admin/islandora/sync/xml-datastreams');
+  return confirm_form($form, $confirm_text, 'admin/islandora/tools/sync/xml-datastreams');
 }
 
 /**
@@ -237,7 +237,7 @@ function islandora_sync_xml_ds_delete_submit($form, &$form_state) {
     array(':ds_id' => $form_state['values']['ds_id'])
   );
   drupal_set_message(t('Datastream settings deleted'));
-  $form_state['redirect'] = 'admin/islandora/sync/xml-datastreams';
+  $form_state['redirect'] = 'admin/islandora/tools/sync/xml-datastreams';
 }
 
 /**
