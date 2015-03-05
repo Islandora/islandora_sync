@@ -43,7 +43,7 @@ function islandora_sync_menu() {
   $items['admin/islandora/tools/sync/xml-datastreams/%/edit'] = array(
     'title' => 'Edit XML Datastream Settings',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('islandora_sync_xml_ds_add', 4),
+    'page arguments' => array('islandora_sync_xml_ds_add', 5),
     'access arguments' => array('islandora sync settings'),
     'type' => MENU_CALLBACK,
     'file' => 'includes/xml_ds_settings.form.inc',
@@ -51,7 +51,7 @@ function islandora_sync_menu() {
   $items['admin/islandora/tools/sync/xml-datastreams/%/delete'] = array(
     'title' => 'Delete XML Datastream Settings',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('islandora_sync_xml_ds_delete', 4),
+    'page arguments' => array('islandora_sync_xml_ds_delete', 5),
     'access arguments' => array('islandora sync settings'),
     'type' => MENU_CALLBACK,
     'file' => 'includes/xml_ds_settings.form.inc',
