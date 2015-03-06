@@ -289,7 +289,7 @@ function islandora_sync_delete_field_by_dsid($node, $dsid, $field_info = NULL) {
     )->fetchObject();
   }
 
-  $fid = isset($node->{$field_info->field}{$node->language}[0]['fid']) ? $node->{$field_info->field}{$node->language}[0]['fid'] : FALSE;
+  $fid = isset($node->{$field_info->field}[$node->language][0]['fid']) ? $node->{$field_info->field}[$node->language][0]['fid'] : FALSE;
   if ($fid) {
     $file = file_load($fid);
     file_delete($file);

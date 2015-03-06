@@ -167,12 +167,12 @@ function islandora_sync_get_field_values($field, $object, $bundle, $parents = ar
 
       $ds_content = FALSE;
       try {
-        if (is_object($object[$field->dsid])) {
+        if (isset($object[$field->dsid])) {
           $ds_content = $object[$field->dsid]->content;
         }
       }
       catch (Exception $e) {
-
+        watchdog_exception('islandora_sync', $e);
       }
 
       if ($ds_content) {
@@ -191,7 +191,7 @@ function islandora_sync_get_field_values($field, $object, $bundle, $parents = ar
 
     case 'managed_datastream':
       try {
-        if (is_object($object[$field->dsid])) {
+        if (isset($object[$field->dsid])) {
           // @TODO: check for memory problems.
           $values[] = array(
             'content' => $object[$field->dsid]->content,
@@ -200,7 +200,7 @@ function islandora_sync_get_field_values($field, $object, $bundle, $parents = ar
         }
       }
       catch (Exception $e) {
-
+        watchdog_exception('islandora_sync', $e);
       }
       break;
 
@@ -238,7 +238,11 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
       $mime_detect = new MimeDetect();
       $extension = $mime_detect->getExtension($value['mimetype']);
       $file_name = $field_info->dsid . '-' . $entity->type . '-' . $id . '.' . $extension;
-      $file = file_save_data($value['content'], "public://islandora_sync/$id/$file_name", FILE_EXISTS_REPLACE);
+      $file_uri = "public://islandora_sync/$id/$file_name";
+      if (module_exists('image')) {
+        image_path_flush($file_uri);
+      }
+      $file = file_save_data($value['content'], $file_uri, FILE_EXISTS_REPLACE);
       $file->display = 1;
       $prepared_field[] = (array) $file;
       break;
