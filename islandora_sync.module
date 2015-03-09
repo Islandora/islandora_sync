@@ -161,11 +161,6 @@ function islandora_sync_islandora_datastream_purged(FedoraObject $object, $dsid)
       $bundle_info = islandora_sync_get_bundle_settings($node->type);
 
       if ($bundle_info->sync_drupal_update) {
-        $fields = db_query("SELECT * FROM {islandora_sync_fields}
-          WHERE dsid = :dsid
-          AND bundle = :bundle",
-          array(':dsid' => $dsid, ':bundle' => $node->type)
-        );
         $has_non_managed = db_select('islandora_sync_fields', 'f')
           ->fields('f', array())
           ->condition('dsid', $dsid)
