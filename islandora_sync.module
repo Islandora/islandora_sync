@@ -161,33 +161,39 @@ function islandora_sync_islandora_datastream_purged(FedoraObject $object, $dsid)
       $bundle_info = islandora_sync_get_bundle_settings($node->type);
 
       if ($bundle_info->sync_drupal_update) {
-        $field_info = db_query("SELECT * FROM {islandora_sync_fields}
-          WHERE dsid = :dsid
-          AND bundle = :bundle
-          LIMIT 1",
-          array(':dsid' => $dsid, ':bundle' => $node->type)
-        )->fetchObject();
+        $has_non_managed = db_select('islandora_sync_fields', 'f')
+          ->fields('f', array())
+          ->condition('dsid', $dsid)
+          ->condition('bundle', $node->type)
+          ->condition('export_type', 'managed_datastream', '!=')
+          ->countQuery()
+          ->execute()
+          ->fetchField() > 0;
 
-        if ($field_info) {
-          if ($field_info->export_type == 'managed_datastream') {
-            if ($bundle_info->sync_drupal_timing == 'real_time') {
-              islandora_sync_delete_field_by_dsid($node, $dsid, $field_info);
-            }
-            else {
-              islandora_sync_queue_operation(
-                $object->id,
-                $bundle_info->entity_type,
-                $node->type,
-                'delete_datastream_field',
-                $node->nid,
-                array('dsid' => $dsid)
-              );
-            }
+        if ($has_non_managed) {
+          // Handle like a normal update.
+          islandora_sync_update_from_fedora($object);
+        }
+        elseif ($bundle_info->sync_drupal_timing == 'real_time') {
+          $managed_datastream_fields = db_select('islandora_sync_fields', 'f')
+            ->fields('f', array())
+            ->condition('dsid', $dsid)
+            ->condition('bundle', $node->type)
+            ->condition('export_type', 'managed_datastream')
+            ->execute();
+          foreach ($managed_datastream_fields as $managed_file_field) {
+            islandora_sync_delete_field_by_dsid($node, $dsid, $managed_file_field);
           }
-          else {
-            // Handle like a normal update.
-            islandora_sync_update_from_fedora($object);
-          }
+        }
+        else {
+          islandora_sync_queue_operation(
+            $object->id,
+            $bundle_info->entity_type,
+            $node->type,
+            'delete_datastream_field',
+            $node->nid,
+            array('dsid' => $dsid)
+          );
         }
       }
     }
@@ -279,22 +285,26 @@ function islandora_sync_update_from_fedora(FedoraObject $object, $ds_id = NULL) 
 /**
  * Delete node field values based on the field mapping to a datastream ID.
  */
-function islandora_sync_delete_field_by_dsid($node, $dsid, $field_info = NULL) {
-  if (is_null($field_info)) {
-    $field_info = db_query("SELECT * FROM {islandora_sync_fields}
+function islandora_sync_delete_field_by_dsid($node, $dsid, $field_in = NULL) {
+  if (is_null($field_in)) {
+    $fields = db_query("SELECT * FROM {islandora_sync_fields}
       WHERE dsid = :dsid
-      AND bundle = :bundle
-      LIMIT 1",
+      AND bundle = :bundle",
       array(':dsid' => $dsid, ':bundle' => $node->type)
-    )->fetchObject();
+    );
+  }
+  else {
+    $fields = array($field_in);
   }
 
-  $fid = isset($node->{$field_info->field}[$node->language][0]['fid']) ? $node->{$field_info->field}[$node->language][0]['fid'] : FALSE;
-  if ($fid) {
-    $file = file_load($fid);
-    file_delete($file);
+  foreach ($fields as $field_info) {
+    $fid = isset($node->{$field_info->field}[$node->language][0]['fid']) ? $node->{$field_info->field}[$node->language][0]['fid'] : FALSE;
+    if ($fid) {
+      $file = file_load($fid);
+      file_delete($file);
+    }
+    $node->{$field_info->field} = array();
   }
-  $node->{$field_info->field} = array();
   node_save($node);
 }
 
