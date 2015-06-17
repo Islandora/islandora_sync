@@ -261,11 +261,16 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
         $term_id = key($terms);
       }
       else {
-        $term = new stdClass();
-        $term->name = $value;
-        $term->vid = $vid;
-        taxonomy_term_save($term);
-        $term_id = $term->tid;
+        if (!empty($value)) {
+          $term = new stdClass();
+          $term->name = $value;
+          $term->vid = $vid;
+          taxonomy_term_save($term);
+          $term_id = $term->tid;
+        }
+        else {
+          break;
+        }
       }
       $prepared_field[]['tid'] = $term_id;
       break;
