@@ -151,7 +151,7 @@ function islandora_sync_get_field_values($field, $object, $bundle, $parents = ar
         $read_path = '//';
       }
 
-	  $field_path = $field->read_path;
+      $field_path = $field->read_path;
       if ($field->read_context == 'parent') {
         $parent_path = islandora_sync_get_parent_path($field, $bundle, $parents);
         $read_path .= $parent_path;
@@ -275,6 +275,14 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
         }
       }
       $prepared_field[]['tid'] = $term_id;
+      break;
+
+    case 'entityreference':
+      // Grab the last instance of a number found
+      // between parentheses. That's the term ID.
+      preg_match('/\((\d+)\)$/',  $value, $matches);
+      $value = ((count($matches) >= 2) ? $matches[(count($matches) - 1)] : $matches[0]);
+      $prepared_field[]['target_id'] = $value;
       break;
 
     case 'text_long':
