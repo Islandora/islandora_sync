@@ -35,9 +35,8 @@ function islandora_sync_import_from_pid($pid, $type, $nid = FALSE, $ds_id = NULL
     $node->log = 'Updated by islandora_sync';
   }
 
-  if (!isset($node->title)) {
-    $node->title = $object->label;
-  }
+  // Ensure the node title and object title always match.
+  $node->title = $object->label;
 
   $author = user_load_by_name($object->owner);
   if ($author) {
@@ -95,6 +94,7 @@ function islandora_sync_build_node_fields(&$node, $object, $ds_id) {
   $fields_to_populate = $fields_to_populate_query->execute()->fetchAll();
 
   foreach ($fields_to_populate as $field) {
+    $field->pid = $object->id; // Add the Fedora ID to the object.
     $return = module_invoke_all('islandora_sync_node_field_build', $node, $object, $field, $ds_id);
 
     if (!$return) {
@@ -151,9 +151,7 @@ function islandora_sync_get_field_values($field, $object, $bundle, $parents = ar
         $read_path = '//';
       }
 
-      $field_path = db_query("SELECT read_path FROM {islandora_sync_fields} WHERE field = :field AND bundle = :bundle",
-        array(':field' => $field->field, ':bundle' => $field->bundle)
-      )->fetchField();
+	  $field_path = $field->read_path;
       if ($field->read_context == 'parent') {
         $parent_path = islandora_sync_get_parent_path($field, $bundle, $parents);
         $read_path .= $parent_path;
@@ -248,15 +246,19 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
       break;
 
     case 'taxonomy_term_reference':
-      $term_field_info = db_query("SELECT * FROM {field_config_instance} WHERE field_name = :field_name AND bundle = :bundle",
-        array(':field_name' => $field_info->field, ':bundle' => $field_info->bundle)
+      // Find the vocabulary to which this taxonomy term belongs.
+      // https://groups.google.com/d/msg/islandora/MytIAZrMdwg/3FpwJZ06eeMJ
+      $term_field_info = db_query("SELECT data FROM {field_config} WHERE field_name = :field_name",
+        array(':field_name' => $field_info->field)
       )->fetchObject();
       $term_data = unserialize($term_field_info->data);
-      $vid = db_query("SELECT vid FROM {taxonomy_vocabulary} WHERE name = :name",
-        array(':name' => $term_data['label'])
-      )->fetchField();
-
-      $terms = taxonomy_get_term_by_name($value);
+      $vocab_machine_name = $term_data['settings']['allowed_values'][0]['vocabulary'];
+      $vocab_object = taxonomy_vocabulary_machine_name_load($vocab_machine_name);
+      $vid = $vocab_object->vid;
+      // Remove any quotation marks at the beginning and/or end of the term.
+      $value = trim($value, '"');
+      // When searching for the term, only look in the appropriate vocabulary.
+      $terms = taxonomy_get_term_by_name($value, $vocab_machine_name);
       if (!empty($terms)) {
         $term_id = key($terms);
       }
@@ -273,6 +275,12 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
         }
       }
       $prepared_field[]['tid'] = $term_id;
+      break;
+
+    case 'text_long':
+    case 'text_with_summary':
+      $prepared_field[] = array('value'  => $value,
+                                'format' => filter_default_format());
       break;
 
     default:
