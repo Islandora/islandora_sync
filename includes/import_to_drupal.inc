@@ -302,8 +302,10 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
       // Grab the last instance of a number found
       // between parentheses. That's the term ID.
       preg_match('/\((\d+)\)$/',  $value, $matches);
-      $value = ((count($matches) >= 2) ? $matches[(count($matches) - 1)] : $matches[0]);
-      $prepared_field[]['target_id'] = $value;
+      if (count($matches) > 0) {
+        $value = ((count($matches) >= 2) ? $matches[(count($matches) - 1)] : $matches[0]);
+        $prepared_field[]['target_id'] = $value;
+      }
       break;
 
     case 'text_long':
@@ -313,7 +315,9 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
       break;
 
     default:
-      $prepared_field[]['value'] = $value;
+      if (trim($value) != '') {
+        $prepared_field[]['value'] = $value;
+      }
   }
 }
 
