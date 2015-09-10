@@ -313,7 +313,7 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
     case 'text_with_summary':
       $prepared_field[] = array(
         'value'  => $value,
-        'format' => filter_default_format()
+        'format' => filter_default_format(),
       );
       break;
 
