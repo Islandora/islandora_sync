@@ -89,7 +89,8 @@ function islandora_sync_build_node_fields(&$node, $object, $ds_id) {
   $fields_to_populate = $fields_to_populate_query->execute()->fetchAll();
 
   foreach ($fields_to_populate as $field) {
-    $field->pid = $object->id; // Add the Fedora ID to the object.
+    // Add the Fedora ID to the object.
+    $field->pid = $object->id;
     $return = module_invoke_all('islandora_sync_node_field_build', $node, $object, $field, $ds_id);
 
     if (!$return) {
@@ -230,15 +231,15 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
       module_load_include('inc', 'islandora', 'mime_detect');
       $mime_detect = new MimeDetect();
       $extension = $mime_detect->getExtension($value['mimetype']);
-      // retrieve the settings for this field.
+      // Retrieve the settings for this field.
       $field_settings = field_info_instance('node', $field_info->field, $entity->type);
 
       // Determine if the field configuration has already
       // specified a subdirectory where files should be saved.
       if ((isset($field_settings['settings']['file_directory'])) &&
-          ( trim($field_settings['settings']['file_directory'])  != "")) {
+          (trim($field_settings['settings']['file_directory']) != "")) {
         $file_name_component = NULL;
-        // Use the subdirectory path already specified in the field configuration.
+        // Use subdirectory path already specified in the field configuration.
         $subdirectory = $field_settings['settings']['file_directory'];
         $node_path = "public://$subdirectory";
         if (strtolower($field_info->dsid) != $extension) {
@@ -254,7 +255,7 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
       }
 
       $file_uri = "$node_path/$file_name";
-      // Check to see if a folder already exists for this node. If not, create it.
+      // Check if a folder already exists for this node. If not, create it.
       if (!file_prepare_directory($node_path)) {
         drupal_mkdir($node_path);
       }
@@ -301,7 +302,7 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
     case 'entityreference':
       // Grab the last instance of a number found
       // between parentheses. That's the term ID.
-      preg_match('/\((\d+)\)$/',  $value, $matches);
+      preg_match('/\((\d+)\)$/', $value, $matches);
       if (count($matches) > 0) {
         $value = ((count($matches) >= 2) ? $matches[(count($matches) - 1)] : $matches[0]);
         $prepared_field[]['target_id'] = $value;
@@ -310,8 +311,10 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
 
     case 'text_long':
     case 'text_with_summary':
-      $prepared_field[] = array('value'  => $value,
-                                'format' => filter_default_format());
+      $prepared_field[] = array(
+        'value'  => $value,
+        'format' => filter_default_format()
+      );
       break;
 
     default:
