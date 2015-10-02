@@ -18,8 +18,8 @@
  * @return array
  *   Form structure.
  */
-function islandora_sync_bundle_settings_form($form, $form_state, $bundle) {
-  $form = array();
+function islandora_sync_bundle_settings_form($form, &$form_state, $bundle) {
+  form_load_include($form_state, 'inc', 'islandora', 'includes/utilities');
   $bundle = str_replace('-', '_', $bundle);
   $settings = islandora_sync_get_bundle_settings($bundle);
 
@@ -143,7 +143,13 @@ function islandora_sync_bundle_settings_form($form, $form_state, $bundle) {
   $form['sync_drupal_group']['sync_drupal_delete']['#default_value'] = isset($settings->sync_drupal_delete) ?
     $settings->sync_drupal_delete : TRUE;
 
-  $content_models = drupal_map_assoc(islandora_sync_get_content_models());
+  $labellize = function ($model_info) {
+    return format_string('!label (!pid)', array(
+      '!label' => $model_info['label'],
+      '!pid' => $model_info['pid'],
+    ));
+  };
+  $content_models = array_map($labellize, islandora_get_content_models());
 
   $form['cmodel'] = array(
     '#type' => 'radios',
