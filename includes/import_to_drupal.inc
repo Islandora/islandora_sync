@@ -237,8 +237,15 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
       module_load_include('inc', 'islandora', 'mime_detect');
       $mime_detect = new MimeDetect();
       $extension = $mime_detect->getExtension($value['mimetype']);
-      $file_name = $field_info->dsid . '-' . $entity->type . '-' . $id . '.' . $extension;
-      $file_uri = "public://islandora_sync/$id/$file_name";
+      $file_name = $field_info->dsid . '-' . $entity->type;
+      $params = array(
+        'field_info' => $field_info,
+        'entity' => $entity,
+        'value' => $value,
+      );
+      drupal_alter('islandora_sync_file_name', $file_name, $params);
+      $full_file = "{$file_name}-{$id}.{$extension}";
+      $file_uri = "public://islandora_sync/$id/$full_file";
       if (module_exists('image')) {
         image_path_flush($file_uri);
       }

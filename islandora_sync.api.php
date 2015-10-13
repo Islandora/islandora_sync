@@ -24,3 +24,19 @@ function hook_islandora_sync_node_field_build($node, $object, $field) {
     }
   }
 }
+
+/**
+ * Allows modules to change file names before they are saved.
+ *
+ * @param string $file_name
+ *   The current file URI.
+ * @param array $params
+ *   An array containing:
+ *   -field_info (stdObject): Field object record as stored in
+ *   islandora_sync_fields table.
+ *   -entity (Node): The entity (node) being populated.
+ *   -value (array): The field value.
+ */
+function hook_islandora_sync_file_name_alter(&$file_name, $params) {
+  $file_name = 'test.mime';
+}
