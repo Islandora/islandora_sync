@@ -238,14 +238,10 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
       // specified a subdirectory where files should be saved.
       if ((isset($field_settings['settings']['file_directory'])) &&
           (trim($field_settings['settings']['file_directory']) != "")) {
-        $file_name_component = NULL;
         // Use subdirectory path already specified in the field configuration.
         $subdirectory = $field_settings['settings']['file_directory'];
         $node_path = "public://$subdirectory";
-        if (strtolower($field_info->dsid) != $extension) {
-          $file_name_component = '-' . str_replace($extension, '', strtolower($field_info->dsid));
-        }
-        $file_name = $entity->type . '-' . $id . $file_name_component . '.' . $extension;
+        $file_name = $entity->type . '-' . $id . '.' . $extension;
       }
       // Otherwise, by default, a folder should be created
       // for each node ID and the derivatives saved there.
