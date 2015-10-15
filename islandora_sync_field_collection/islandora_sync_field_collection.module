@@ -50,6 +50,13 @@ function islandora_sync_field_collection_islandora_sync_node_field_build($node, 
 
         foreach ($values as $k => $v) {
           if (isset($v[$i]) && $v[$i]) {
+            // At this level, all fields in this collection will generically have a
+            // 'type' value of 'field_collection'. Determine the actual 'type' of each
+            // individual field and update the object with that value. Otherwise,
+            // islandora_sync_save_field() will make incorrect decisions based on type.
+            $field_data = field_info_field($child_fields[$k]->field);
+            $field_type = (isset($field_data['type']) ? $field_data['type'] : $child_fields[$k]->type);
+            $child_fields[$k]->type = $field_type;
             islandora_sync_save_field($child_fields[$k], $field_collection_item, $v[$i]);
           }
         }

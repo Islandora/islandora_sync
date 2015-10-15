@@ -35,9 +35,8 @@ function islandora_sync_import_from_pid($pid, $type, $nid = FALSE, $ds_id = NULL
     $node->log = 'Updated by islandora_sync';
   }
 
-  if (!isset($node->title)) {
-    $node->title = $object->label;
-  }
+  // Ensure the node title and object title always match.
+  $node->title = $object->label;
 
   $author = user_load_by_name($object->owner);
   if ($author) {
@@ -77,11 +76,6 @@ function islandora_sync_import_from_pid($pid, $type, $nid = FALSE, $ds_id = NULL
  *   The Fedora object datastream ID.
  */
 function islandora_sync_build_node_fields(&$node, $object, $ds_id) {
-  // Check to see if a folder already exists for this node, if not create it.
-  $node_path = "public://islandora_sync/$node->nid";
-  if (!file_prepare_directory($node_path)) {
-    drupal_mkdir($node_path);
-  }
   $fields_to_populate_query = db_select('islandora_sync_fields', 'isf');
   $fields_to_populate_query->leftJoin('field_config', 'fc', 'fc.field_name = isf.field');
   $fields_to_populate_query->fields('isf')
@@ -95,6 +89,8 @@ function islandora_sync_build_node_fields(&$node, $object, $ds_id) {
   $fields_to_populate = $fields_to_populate_query->execute()->fetchAll();
 
   foreach ($fields_to_populate as $field) {
+    // Add the Fedora ID to the object.
+    $field->pid = $object->id;
     $return = module_invoke_all('islandora_sync_node_field_build', $node, $object, $field, $ds_id);
 
     if (!$return) {
@@ -151,9 +147,7 @@ function islandora_sync_get_field_values($field, $object, $bundle, $parents = ar
         $read_path = '//';
       }
 
-      $field_path = db_query("SELECT read_path FROM {islandora_sync_fields} WHERE field = :field AND bundle = :bundle",
-        array(':field' => $field->field, ':bundle' => $field->bundle)
-      )->fetchField();
+      $field_path = $field->read_path;
       if ($field->read_context == 'parent') {
         $parent_path = islandora_sync_get_parent_path($field, $bundle, $parents);
         $read_path .= $parent_path;
@@ -237,8 +231,30 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
       module_load_include('inc', 'islandora', 'mime_detect');
       $mime_detect = new MimeDetect();
       $extension = $mime_detect->getExtension($value['mimetype']);
-      $file_name = $field_info->dsid . '-' . $entity->type . '-' . $id . '.' . $extension;
-      $file_uri = "public://islandora_sync/$id/$file_name";
+      // Retrieve the settings for this field.
+      $field_settings = field_info_instance('node', $field_info->field, $entity->type);
+
+      // Determine if the field configuration has already
+      // specified a subdirectory where files should be saved.
+      if ((isset($field_settings['settings']['file_directory'])) &&
+          (trim($field_settings['settings']['file_directory']) != "")) {
+        // Use subdirectory path already specified in the field configuration.
+        $subdirectory = $field_settings['settings']['file_directory'];
+        $node_path = "public://$subdirectory";
+        $file_name = $entity->type . '-' . $id . '.' . $extension;
+      }
+      // Otherwise, by default, a folder should be created
+      // for each node ID and the derivatives saved there.
+      else {
+        $node_path = "public://islandora_sync/$id";
+        $file_name = $field_info->dsid . '-' . $entity->type . '-' . $id . '.' . $extension;
+      }
+
+      $file_uri = "$node_path/$file_name";
+      // Check if a folder already exists for this node. If not, create it.
+      if (!file_prepare_directory($node_path)) {
+        drupal_mkdir($node_path);
+      }
       if (module_exists('image')) {
         image_path_flush($file_uri);
       }
@@ -248,15 +264,19 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
       break;
 
     case 'taxonomy_term_reference':
-      $term_field_info = db_query("SELECT * FROM {field_config_instance} WHERE field_name = :field_name AND bundle = :bundle",
-        array(':field_name' => $field_info->field, ':bundle' => $field_info->bundle)
+      // Find the vocabulary to which this taxonomy term belongs.
+      // https://groups.google.com/d/msg/islandora/MytIAZrMdwg/3FpwJZ06eeMJ
+      $term_field_info = db_query("SELECT data FROM {field_config} WHERE field_name = :field_name",
+        array(':field_name' => $field_info->field)
       )->fetchObject();
       $term_data = unserialize($term_field_info->data);
-      $vid = db_query("SELECT vid FROM {taxonomy_vocabulary} WHERE name = :name",
-        array(':name' => $term_data['label'])
-      )->fetchField();
-
-      $terms = taxonomy_get_term_by_name($value);
+      $vocab_machine_name = $term_data['settings']['allowed_values'][0]['vocabulary'];
+      $vocab_object = taxonomy_vocabulary_machine_name_load($vocab_machine_name);
+      $vid = $vocab_object->vid;
+      // Remove any quotation marks at the beginning and/or end of the term.
+      $value = trim($value, '"');
+      // When searching for the term, only look in the appropriate vocabulary.
+      $terms = taxonomy_get_term_by_name($value, $vocab_machine_name);
       if (!empty($terms)) {
         $term_id = key($terms);
       }
@@ -275,8 +295,28 @@ function islandora_sync_save_field($field_info, &$entity, $value) {
       $prepared_field[]['tid'] = $term_id;
       break;
 
+    case 'entityreference':
+      // Grab the last instance of a number found
+      // between parentheses. That's the term ID.
+      preg_match('/\((\d+)\)$/', $value, $matches);
+      if (count($matches) > 0) {
+        $value = ((count($matches) >= 2) ? $matches[(count($matches) - 1)] : $matches[0]);
+        $prepared_field[]['target_id'] = $value;
+      }
+      break;
+
+    case 'text_long':
+    case 'text_with_summary':
+      $prepared_field[] = array(
+        'value'  => $value,
+        'format' => filter_default_format(),
+      );
+      break;
+
     default:
-      $prepared_field[]['value'] = $value;
+      if (trim($value) != '') {
+        $prepared_field[]['value'] = $value;
+      }
   }
 }
 
