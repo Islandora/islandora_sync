@@ -449,29 +449,12 @@ function islandora_sync_queue_operation($pid, $entity_type, $entity_bundle, $ope
  * Get a list of content models.
  */
 function islandora_sync_get_content_models() {
-  module_load_include('inc', 'islandora', 'includes/tuque');
+  module_load_include('inc', 'islandora', 'includes/utilities');
 
-  $connection = new IslandoraTuque();
+  $message = islandora_deprecated('7.x-1.7', 'Use islandora_get_content_models() from "islandora".');
+  trigger_error(filter_xss($message), E_USER_DEPRECATED);
 
-  $query = 'select $object  $model from <#ri>
-    where (walk($model <fedora-model:hasModel><info:fedora/fedora-system:ContentModel-3.0>
-    and $model <fedora-model:hasModel> $object))
-    minus $object <mulgara:is><info:fedora/fedora-system:FedoraObject-3.0>
-    minus $object <mulgara:is><info:fedora/fedora-system:ContentModel-3.0>
-    minus $object <mulgara:is><info:fedora/fedora-system:ServiceDefinition-3.0>
-    minus $object <mulgara:is><info:fedora/fedora-system:ServiceDeployment-3.0>
-    order by $object';
-
-  $results = $connection->repository->ri->itqlQuery($query);
-
-  $content_models = array();
-  foreach ($results as $model) {
-    $content_models[] = $model['object']['value'];
-  }
-  $content_models = array_unique($content_models);
-  $content_models = array_values($content_models);
-
-  return $content_models;
+  return array_keys(islandora_get_content_models(TRUE));
 }
 
 /**
