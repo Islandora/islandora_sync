@@ -281,6 +281,7 @@ function islandora_sync_schema() {
       'pid' => array(
         'type' => 'varchar',
         'length' => 128,
+        'not null' => TRUE,
       ),
       'type' => array(
         'type' => 'varchar',
@@ -297,6 +298,7 @@ function islandora_sync_schema() {
       'entity_id' => array(
         'type' => 'varchar',
         'length' => 128,
+        'not null' => TRUE,
       ),
     ),
     'primary key' => array('pid', 'entity_id'),
@@ -309,4 +311,22 @@ function islandora_sync_schema() {
  */
 function islandora_sync_install() {
   drupal_mkdir('public://islandora_sync');
+}
+
+/**
+ * Implements hook_update_N().
+ *
+ * Sets the primary key fields in islandora_sync_map to NOT NULL explicitly.
+ */
+function islandora_sync_update_7100() {
+  db_change_field('islandora_sync_map', 'pid', 'pid', array(
+    'type' => 'varchar',
+    'length' => 128,
+    'not null' => TRUE,
+  ));
+  db_change_field('islandora_sync_map', 'entities_id', 'entities_id', array(
+    'type' => 'varchar',
+    'length' => 128,
+    'not null' => TRUE,
+  ));
 }
